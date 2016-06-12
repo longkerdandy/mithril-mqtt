@@ -17,9 +17,9 @@ public interface SyncStorage {
 
     /**
      * Init the storage
-     * Should be invoked before using redis storage
+     * Should be invoked before using store storage
      *
-     * @param config Redis Configuration
+     * @param config Store Configuration
      */
     void init(AbstractConfiguration config);
 

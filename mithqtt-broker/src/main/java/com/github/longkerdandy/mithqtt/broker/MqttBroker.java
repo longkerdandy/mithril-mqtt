@@ -111,7 +111,7 @@ public class MqttBroker {
 
         // tcp server
         logger.debug("Initializing tcp server ...");
-        InternalLoggerFactory.setDefaultFactory(Slf4JLoggerFactory.INSTANCE);
+        InternalLoggerFactory.setDefaultFactory(Slf4JLoggerFactory.getDefaultFactory());
         EventLoopGroup bossGroup = brokerConfig.getBoolean("netty.useEpoll") ? new EpollEventLoopGroup() : new NioEventLoopGroup();
         EventLoopGroup workerGroup = brokerConfig.getBoolean("netty.useEpoll") ? new EpollEventLoopGroup() : new NioEventLoopGroup();
         EventLoopGroup handlerGroup = brokerConfig.getBoolean("netty.useEpoll") ? new EpollEventLoopGroup() : new NioEventLoopGroup();

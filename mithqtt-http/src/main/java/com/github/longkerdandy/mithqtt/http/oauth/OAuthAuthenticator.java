@@ -33,7 +33,10 @@ public class OAuthAuthenticator implements io.dropwizard.auth.Authenticator<Stri
             return Optional.absent();
         }
         // validate token
-        String u = this.authenticator.oauth(credentials);
+        String u = "";
+        if (this.authenticator instanceof com.github.longkerdandy.mithqtt.api.auth.OAuthAuthenticator) {
+            u = ((com.github.longkerdandy.mithqtt.api.auth.OAuthAuthenticator)this.authenticator).oauth(credentials);
+        }
         return StringUtils.isBlank(u) ? Optional.absent() : Optional.of(new UserPrincipal(u));
     }
 }
