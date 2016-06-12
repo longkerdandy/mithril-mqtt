@@ -69,7 +69,6 @@ public class SyncStorageHandler extends SimpleChannelInboundHandler<MqttMessage>
     }
 
     @Override
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     protected void channelRead0(ChannelHandlerContext ctx, MqttMessage msg) throws Exception {
         // Disconnect if The MQTT message is invalid
         if (msg.decoderResult().isFailure()) {
@@ -132,6 +131,8 @@ public class SyncStorageHandler extends SimpleChannelInboundHandler<MqttMessage>
                 break;
             case DISCONNECT:
                 onDisconnect(ctx);
+                break;
+            default:
                 break;
         }
     }
@@ -300,7 +301,7 @@ public class SyncStorageHandler extends SimpleChannelInboundHandler<MqttMessage>
                 if (!this.cleanSession) {
                     if (exist == 0) {
                         logger.trace("Message response: Resend In-Flight messages to client {}", this.clientId);
-                        for (InternalMessage inFlight : this.store.getAllInFlightMessages(this.clientId)) {
+                        for (@SuppressWarnings("rawtypes") InternalMessage inFlight : this.store.getAllInFlightMessages(this.clientId)) {
                             if (inFlight.getMessageType() == MqttMessageType.PUBLISH) {
                                 this.registry.sendMessage(ctx, inFlight.toMqttMessage(), this.clientId, ((Publish) inFlight.getPayload()).getPacketId(), false);
                             } else if (inFlight.getMessageType() == MqttMessageType.PUBREL) {
@@ -662,7 +663,8 @@ public class SyncStorageHandler extends SimpleChannelInboundHandler<MqttMessage>
         this.registry.sendMessage(ctx, pubrel, this.clientId, packetId, true);
 
         // Save PUBREL as in-flight message
-        InternalMessage internal = InternalMessage.fromMqttMessage(this.version, this.clientId, this.userName, this.brokerId, pubrel);
+        @SuppressWarnings("rawtypes")
+		InternalMessage internal = InternalMessage.fromMqttMessage(this.version, this.clientId, this.userName, this.brokerId, pubrel);
         logger.trace("Add in-flight: Add In-Flight PUBREL message {} for client {}", packetId, this.clientId);
         this.store.addInFlightMessage(this.clientId, packetId, internal, true);
     }

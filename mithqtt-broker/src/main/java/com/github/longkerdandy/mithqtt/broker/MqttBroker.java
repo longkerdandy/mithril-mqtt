@@ -111,7 +111,7 @@ public class MqttBroker {
 
         // tcp server
         logger.debug("Initializing tcp server ...");
-        InternalLoggerFactory.setDefaultFactory(new Slf4JLoggerFactory());
+        InternalLoggerFactory.setDefaultFactory(Slf4JLoggerFactory.INSTANCE);
         EventLoopGroup bossGroup = brokerConfig.getBoolean("netty.useEpoll") ? new EpollEventLoopGroup() : new NioEventLoopGroup();
         EventLoopGroup workerGroup = brokerConfig.getBoolean("netty.useEpoll") ? new EpollEventLoopGroup() : new NioEventLoopGroup();
         EventLoopGroup handlerGroup = brokerConfig.getBoolean("netty.useEpoll") ? new EpollEventLoopGroup() : new NioEventLoopGroup();
@@ -190,7 +190,7 @@ public class MqttBroker {
             r.forEach(client -> store.removeConnectedNode(client, brokerId));
         }
         final int iterPos = 0;
-        while (!r.get(iterPos).equals("0")) {
+        while (r != null && r.size() > 0 && !r.get(iterPos).equals("0")) {
             r = store.getConnectedClients(brokerId, r.get(iterPos), 100);
             if (r != null) {
                 r.forEach(client -> store.removeConnectedNode(client, brokerId));
