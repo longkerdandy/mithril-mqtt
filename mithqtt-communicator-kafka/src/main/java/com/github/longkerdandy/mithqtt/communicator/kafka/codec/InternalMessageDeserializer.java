@@ -25,7 +25,7 @@ public class InternalMessageDeserializer implements Deserializer<InternalMessage
     @SuppressWarnings("unchecked")
     public InternalMessage deserialize(String topic, byte[] bytes) {
         try {
-            JavaType type = JSONs.Mapper.getTypeFactory().constructParametrizedType(InternalMessage.class, InternalMessage.class, JsonNode.class);
+            JavaType type = JSONs.Mapper.getTypeFactory().constructParametricType(InternalMessage.class, JsonNode.class);
             InternalMessage m = JSONs.Mapper.readValue(bytes, type);
             switch (m.getMessageType()) {
                 case CONNECT:

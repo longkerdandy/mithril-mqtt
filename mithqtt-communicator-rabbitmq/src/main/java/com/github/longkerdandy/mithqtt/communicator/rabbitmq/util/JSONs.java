@@ -31,7 +31,7 @@ public class JSONs {
     @SuppressWarnings("unchecked")
     public static InternalMessage decodeInternalMessage(byte[] data) {
         try {
-            JavaType type = Mapper.getTypeFactory().constructParametrizedType(InternalMessage.class, InternalMessage.class, JsonNode.class);
+            JavaType type = Mapper.getTypeFactory().constructParametricType(InternalMessage.class, JsonNode.class);
             InternalMessage m = Mapper.readValue(data, type);
             switch (m.getMessageType()) {
                 case CONNECT:

@@ -4,9 +4,12 @@ dependencies {
 
     // redis
     compile 'biz.paluch.redis:lettuce:4.1.Final'
-    compile 'org.redisson:redisson:2.2.8'
+    compile 'org.redisson:redisson:2.2.15'
+
+    // jackson
+    compile 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.4.1'
 
     // json
-    testCompile 'com.fasterxml.jackson.core:jackson-core:2.6.3'
-    testCompile 'com.fasterxml.jackson.core:jackson-databind:2.6.3'
+    testCompile 'com.fasterxml.jackson.core:jackson-core:2.4.1'
+    testCompile 'com.fasterxml.jackson.core:jackson-databind:2.4.1'
 }
