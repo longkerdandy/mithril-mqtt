@@ -1,6 +1,7 @@
 dependencies {
     // netty
     compile 'io.netty:netty-codec:4.1.0.CR2'
+    compile 'io.netty:netty-common:4.1.0.CR2'
 
     // uuid
     compile 'com.fasterxml.uuid:java-uuid-generator:3.1.4'

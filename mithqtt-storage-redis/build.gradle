@@ -7,9 +7,7 @@ dependencies {
     compile 'org.redisson:redisson:2.2.15'
 
     // jackson
-    compile 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.4.1'
+    compile 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.6.5'
+    compile 'com.fasterxml.jackson.core:jackson-core:2.6.5'
     compile 'com.fasterxml.jackson.core:jackson-databind:2.6.5'
-
-    // json
-    testCompile 'com.fasterxml.jackson.core:jackson-core:2.4.1'
 }
