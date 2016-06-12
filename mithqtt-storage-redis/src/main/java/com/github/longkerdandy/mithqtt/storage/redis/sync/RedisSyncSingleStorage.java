@@ -156,8 +156,8 @@ public class RedisSyncSingleStorage implements RedisSyncStorage {
     }
 
     @Override
-    public ValueScanCursor<String> getConnectedClients(String node, String cursor, long count) {
-        return set().sscan(RedisKey.connectedClients(node), ScanCursor.of(cursor), ScanArgs.Builder.limit(count));
+    public List<String> getConnectedClients(String node, String cursor, long count) {
+        return set().sscan(RedisKey.connectedClients(node), ScanCursor.of(cursor), ScanArgs.Builder.limit(count)).getValues();
     }
 
     @Override
