@@ -4,7 +4,6 @@ package com.github.longkerdandy.mithqtt.http.entity;
 /**
  * Simple Result Response
  */
-@SuppressWarnings("unused")
 public class ResultEntity<T> {
 
     private T result;

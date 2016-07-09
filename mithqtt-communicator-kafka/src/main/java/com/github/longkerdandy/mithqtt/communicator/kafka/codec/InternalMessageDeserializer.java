@@ -13,7 +13,7 @@ import java.util.Map;
 /**
  * Internal Message Kafka Deserializer
  */
-@SuppressWarnings("unused")
+@SuppressWarnings("rawtypes")
 public class InternalMessageDeserializer implements Deserializer<InternalMessage> {
 
     @Override
@@ -22,7 +22,7 @@ public class InternalMessageDeserializer implements Deserializer<InternalMessage
     }
 
     @Override
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({ "unchecked", "deprecation" })
     public InternalMessage deserialize(String topic, byte[] bytes) {
         try {
             JavaType type = JSONs.Mapper.getTypeFactory().constructParametricType(InternalMessage.class, JsonNode.class);

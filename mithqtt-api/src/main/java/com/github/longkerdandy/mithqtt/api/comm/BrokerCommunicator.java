@@ -7,7 +7,6 @@ import org.apache.commons.configuration.AbstractConfiguration;
  * Broker Communicator
  * Link broker to other modules
  */
-@SuppressWarnings("unused")
 public interface BrokerCommunicator {
 
     /**
@@ -30,7 +29,8 @@ public interface BrokerCommunicator {
      * @param brokerId Broker Id
      * @param message  Internal Message
      */
-    void sendToBroker(String brokerId, InternalMessage message);
+    @SuppressWarnings("rawtypes")
+	void sendToBroker(String brokerId, InternalMessage message);
 
     /**
      * Send internal message to outside
@@ -38,5 +38,6 @@ public interface BrokerCommunicator {
      *
      * @param message Internal Message
      */
-    void sendToApplication(InternalMessage message);
+    @SuppressWarnings("rawtypes")
+	void sendToApplication(InternalMessage message);
 }

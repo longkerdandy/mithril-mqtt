@@ -4,7 +4,6 @@ package com.github.longkerdandy.mithqtt.http.entity;
 /**
  * Error Code
  */
-@SuppressWarnings("unused")
 public class ErrorCode {
 
     public static final int UNAUTHORIZED = 1;

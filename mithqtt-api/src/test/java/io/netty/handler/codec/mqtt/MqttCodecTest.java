@@ -27,6 +27,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.MockitoAnnotations;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -70,7 +71,7 @@ public class MqttCodecTest {
                         messageType == MqttMessageType.PUBREL ? MqttQoS.AT_LEAST_ONCE : MqttQoS.AT_MOST_ONCE,
                         false,
                         0);
-        MqttPacketIdVariableHeader mqttPacketIdVariableHeader = MqttPacketIdVariableHeader.from(12345);
+        MqttMessageIdVariableHeader mqttPacketIdVariableHeader = MqttMessageIdVariableHeader.from(12345);
         return new MqttMessage(mqttFixedHeader, mqttPacketIdVariableHeader);
     }
 
@@ -80,11 +81,11 @@ public class MqttCodecTest {
         MqttConnectVariableHeader mqttConnectVariableHeader =
                 new MqttConnectVariableHeader(
                         mqttVersion.protocolName(),
-                        mqttVersion.protocolLevel(),
+                        (int)mqttVersion.protocolLevel(),
                         true,
                         true,
                         true,
-                        MqttQoS.AT_LEAST_ONCE,
+                        MqttQoS.AT_LEAST_ONCE.value(),
                         true,
                         true,
                         KEEP_ALIVE_SECONDS);
@@ -105,7 +106,7 @@ public class MqttCodecTest {
     private static MqttPublishMessage createPublishMessage() {
         MqttFixedHeader mqttFixedHeader =
                 new MqttFixedHeader(MqttMessageType.PUBLISH, false, MqttQoS.AT_LEAST_ONCE, true, 0);
-        MqttPublishVariableHeader mqttPublishVariableHeader = MqttPublishVariableHeader.from("/abc", 1234);
+        MqttPublishVariableHeader mqttPublishVariableHeader = new MqttPublishVariableHeader("/abc", 1234);
         ByteBuf payload = ALLOCATOR.buffer();
         payload.writeBytes("whatever".getBytes(CharsetUtil.UTF_8));
         return new MqttPublishMessage(mqttFixedHeader, mqttPublishVariableHeader, payload);
@@ -114,7 +115,7 @@ public class MqttCodecTest {
     private static MqttSubscribeMessage createSubscribeMessage() {
         MqttFixedHeader mqttFixedHeader =
                 new MqttFixedHeader(MqttMessageType.SUBSCRIBE, false, MqttQoS.AT_LEAST_ONCE, true, 0);
-        MqttPacketIdVariableHeader mqttPacketIdVariableHeader = MqttPacketIdVariableHeader.from(12345);
+        MqttMessageIdVariableHeader mqttPacketIdVariableHeader = MqttMessageIdVariableHeader.from(12345);
 
         List<MqttTopicSubscription> topicSubscriptions = new LinkedList<>();
         topicSubscriptions.add(new MqttTopicSubscription("/abc", MqttQoS.AT_LEAST_ONCE));
@@ -128,15 +129,19 @@ public class MqttCodecTest {
     private static MqttSubAckMessage createSubAckMessage() {
         MqttFixedHeader mqttFixedHeader =
                 new MqttFixedHeader(MqttMessageType.SUBACK, false, MqttQoS.AT_MOST_ONCE, false, 0);
-        MqttPacketIdVariableHeader mqttPacketIdVariableHeader = MqttPacketIdVariableHeader.from(12345);
-        MqttSubAckPayload mqttSubAckPayload = new MqttSubAckPayload(MqttGrantedQoS.SUCCESS_MAX_QOS1, MqttGrantedQoS.SUCCESS_MAX_QOS2, MqttGrantedQoS.SUCCESS_MAX_QOS0);
+        MqttMessageIdVariableHeader mqttPacketIdVariableHeader = MqttMessageIdVariableHeader.from(12345);
+        List<Integer> qosLevels = new ArrayList<Integer>();
+        qosLevels.add(MqttQoS.AT_LEAST_ONCE.value());
+        qosLevels.add(MqttQoS.EXACTLY_ONCE.value());
+        qosLevels.add(MqttQoS.AT_MOST_ONCE.value());
+        MqttSubAckPayload mqttSubAckPayload = new MqttSubAckPayload(qosLevels);
         return new MqttSubAckMessage(mqttFixedHeader, mqttPacketIdVariableHeader, mqttSubAckPayload);
     }
 
     private static MqttUnsubscribeMessage createUnsubscribeMessage() {
         MqttFixedHeader mqttFixedHeader =
                 new MqttFixedHeader(MqttMessageType.UNSUBSCRIBE, false, MqttQoS.AT_LEAST_ONCE, true, 0);
-        MqttPacketIdVariableHeader mqttPacketIdVariableHeader = MqttPacketIdVariableHeader.from(12345);
+        MqttMessageIdVariableHeader mqttPacketIdVariableHeader = MqttMessageIdVariableHeader.from(12345);
 
         List<String> topics = new LinkedList<>();
         topics.add("/abc");
@@ -149,38 +154,32 @@ public class MqttCodecTest {
 
     private static void validateFixedHeaders(MqttFixedHeader expected, MqttFixedHeader actual) {
         assertEquals("MqttFixedHeader MqttMessageType mismatch ", expected.messageType(), actual.messageType());
-        assertEquals("MqttFixedHeader Qos mismatch ", expected.qos(), actual.qos());
+        assertEquals("MqttFixedHeader Qos mismatch ", expected.qosLevel(), actual.qosLevel());
     }
 
     private static void validateConnectVariableHeader(
             MqttConnectVariableHeader expected,
             MqttConnectVariableHeader actual) {
-        assertEquals("MqttConnectVariableHeader ProtocolName mismatch ", expected.protocolName(), actual.protocolName());
-        assertEquals(
-                "MqttConnectVariableHeader KeepAlive mismatch ",
-                expected.keepAlive(),
-                actual.keepAlive());
-        assertEquals("MqttConnectVariableHeader ProtocolLevel mismatch ", expected.protocolLevel(), actual.protocolLevel());
         assertEquals("MqttConnectVariableHeader WillQos mismatch ", expected.willQos(), actual.willQos());
 
-        assertEquals("MqttConnectVariableHeader UserNameFlag mismatch ", expected.userNameFlag(), actual.userNameFlag());
-        assertEquals("MqttConnectVariableHeader PasswordFlag mismatch ", expected.passwordFlag(), actual.passwordFlag());
+        assertEquals("MqttConnectVariableHeader UserNameFlag mismatch ", expected.hasUserName(), actual.hasUserName());
+        assertEquals("MqttConnectVariableHeader PasswordFlag mismatch ", expected.hasPassword(), actual.hasPassword());
         assertEquals(
                 "MqttConnectVariableHeader CleanSession mismatch ",
-                expected.cleanSession(),
-                actual.cleanSession());
-        assertEquals("MqttConnectVariableHeader WillFlag mismatch ", expected.willFlag(), actual.willFlag());
+                expected.isCleanSession(),
+                actual.isCleanSession());
+        assertEquals("MqttConnectVariableHeader WillFlag mismatch ", expected.isWillFlag(), actual.isWillFlag());
         assertEquals(
                 "MqttConnectVariableHeader WillRetain mismatch ",
-                expected.willRetain(),
-                actual.willRetain());
+                expected.isWillRetain(),
+                actual.isWillRetain());
     }
 
     private static void validateConnectPayload(MqttConnectPayload expected, MqttConnectPayload actual) {
         assertEquals(
                 "MqttConnectPayload ClientId mismatch ",
-                expected.clientId(),
-                actual.clientId());
+                expected.clientIdentifier(),
+                actual.clientIdentifier());
         assertEquals("MqttConnectPayload UserName mismatch ", expected.userName(), actual.userName());
         assertEquals("MqttConnectPayload Password mismatch ", expected.password(), actual.password());
         assertEquals("MqttConnectPayload WillMessage mismatch ", expected.willMessage(), actual.willMessage());
@@ -192,15 +191,15 @@ public class MqttCodecTest {
             MqttConnAckVariableHeader actual) {
         assertEquals(
                 "MqttConnAckVariableHeader MqttConnectReturnCode mismatch",
-                expected.returnCode(),
-                actual.returnCode());
+                expected.connectReturnCode(),
+                actual.connectReturnCode());
     }
 
     private static void validatePublishVariableHeader(
             MqttPublishVariableHeader expected,
             MqttPublishVariableHeader actual) {
         assertEquals("MqttPublishVariableHeader TopicName mismatch ", expected.topicName(), actual.topicName());
-        assertEquals("MqttPublishVariableHeader PacketId mismatch ", expected.packetId(), actual.packetId());
+        assertEquals("MqttPublishVariableHeader PacketId mismatch ", expected.messageId(), actual.messageId());
     }
 
     private static void validatePublishPayload(ByteBuf expected, ByteBuf actual) {
@@ -208,14 +207,14 @@ public class MqttCodecTest {
     }
 
     private static void validateMessageIdVariableHeader(
-            MqttPacketIdVariableHeader expected,
-            MqttPacketIdVariableHeader actual) {
-        assertEquals("MqttPacketIdVariableHeader PacketId mismatch ", expected.packetId(), actual.packetId());
+    		MqttMessageIdVariableHeader expected,
+    		MqttMessageIdVariableHeader actual) {
+        assertEquals("MqttPacketIdVariableHeader PacketId mismatch ", expected.messageId(), actual.messageId());
     }
 
     private static void validateSubscribePayload(MqttSubscribePayload expected, MqttSubscribePayload actual) {
-        List<MqttTopicSubscription> expectedTopicSubscriptions = expected.subscriptions();
-        List<MqttTopicSubscription> actualTopicSubscriptions = actual.subscriptions();
+        List<MqttTopicSubscription> expectedTopicSubscriptions = expected.topicSubscriptions();
+        List<MqttTopicSubscription> actualTopicSubscriptions = actual.topicSubscriptions();
 
         assertEquals(
                 "MqttSubscribePayload TopicSubscriptionList size mismatch ",
@@ -229,11 +228,11 @@ public class MqttCodecTest {
     private static void validateTopicSubscription(
             MqttTopicSubscription expected,
             MqttTopicSubscription actual) {
-        assertEquals("MqttTopicSubscription Topic mismatch ", expected.topic(), actual.topic());
+        assertEquals("MqttTopicSubscription Topic mismatch ", expected.topicName(), actual.topicName());
         assertEquals(
                 "MqttTopicSubscription Qos mismatch ",
-                expected.requestedQos(),
-                actual.requestedQos());
+                expected.qualityOfService(),
+                actual.qualityOfService());
     }
 
     private static void validateSubAckPayload(MqttSubAckPayload expected, MqttSubAckPayload actual) {
@@ -442,7 +441,7 @@ public class MqttCodecTest {
         final MqttMessage decodedMessage = (MqttMessage) out.get(0);
         validateFixedHeaders(message.fixedHeader(), decodedMessage.fixedHeader());
         validateMessageIdVariableHeader(
-                (MqttPacketIdVariableHeader) message.variableHeader(),
-                (MqttPacketIdVariableHeader) decodedMessage.variableHeader());
+                (MqttMessageIdVariableHeader) message.variableHeader(),
+                (MqttMessageIdVariableHeader) decodedMessage.variableHeader());
     }
 }

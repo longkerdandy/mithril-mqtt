@@ -18,7 +18,6 @@ import java.util.concurrent.TimeUnit;
 /**
  * Communicator implementation based on Kafka
  */
-@SuppressWarnings("unused")
 public abstract class KafkaCommunicator {
 
     private static final Logger logger = LoggerFactory.getLogger(KafkaCommunicator.class);
@@ -26,7 +25,9 @@ public abstract class KafkaCommunicator {
     protected String BROKER_TOPIC_PREFIX;
     protected String APPLICATION_TOPIC;
 
+    @SuppressWarnings("rawtypes")
     protected KafkaProducer<String, InternalMessage> producer;
+    @SuppressWarnings("rawtypes")
     protected KafkaConsumer<String, InternalMessage> consumer;
     protected ExecutorService executor;
 
@@ -65,14 +66,17 @@ public abstract class KafkaCommunicator {
         }
     }
 
+    @SuppressWarnings("rawtypes")
     public void sendToBroker(String brokerId, InternalMessage message) {
         sendToTopic(BROKER_TOPIC_PREFIX + "." + brokerId, message);
     }
 
+    @SuppressWarnings("rawtypes")
     public void sendToApplication(InternalMessage message) {
         sendToTopic(APPLICATION_TOPIC, message);
     }
 
+    @SuppressWarnings("rawtypes")
     protected void sendToTopic(String topic, InternalMessage message) {
         ProducerRecord<String, InternalMessage> record = new ProducerRecord<>(topic, message);
         this.producer.send(record,

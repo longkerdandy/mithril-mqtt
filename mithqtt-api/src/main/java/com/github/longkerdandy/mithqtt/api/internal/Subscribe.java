@@ -6,10 +6,13 @@ import java.util.List;
 /**
  * Represent MQTT SUBSCRIBE Message's VariableHeader and Payload
  */
-@SuppressWarnings("unused")
 public class Subscribe implements Serializable {
 
-    private int packetId;
+    /**
+	 * 
+	 */
+	private static final long serialVersionUID = -5480986834987570819L;
+	private int packetId;
     private List<TopicSubscription> subscriptions;
 
     protected Subscribe() {

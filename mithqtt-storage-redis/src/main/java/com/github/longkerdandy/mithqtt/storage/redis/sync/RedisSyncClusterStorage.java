@@ -18,7 +18,6 @@ import java.util.concurrent.TimeUnit;
 /**
  * Synchronized Storage for Cluster Redis setup
  */
-@SuppressWarnings("unused")
 public class RedisSyncClusterStorage extends RedisSyncSingleStorage {
 
     // A scalable thread-safe Redis cluster client. Multiple threads may share one connection. The
@@ -29,42 +28,34 @@ public class RedisSyncClusterStorage extends RedisSyncSingleStorage {
     // command key.
     private StatefulRedisClusterConnection<String, String> lettuceClusterConn;
 
-    @SuppressWarnings("unused")
     protected RedisHashCommands<String, String> hash() {
         return this.lettuceClusterConn.sync();
     }
 
-    @SuppressWarnings("unused")
     protected RedisKeyCommands<String, String> key() {
         return this.lettuceClusterConn.sync();
     }
 
-    @SuppressWarnings("unused")
     protected RedisStringCommands<String, String> string() {
         return this.lettuceClusterConn.sync();
     }
 
-    @SuppressWarnings("unused")
     protected RedisListCommands<String, String> list() {
         return this.lettuceClusterConn.sync();
     }
 
-    @SuppressWarnings("unused")
     protected RedisSetCommands<String, String> set() {
         return this.lettuceClusterConn.sync();
     }
 
-    @SuppressWarnings("unused")
     protected RedisSortedSetCommands<String, String> sortedSet() {
         return this.lettuceClusterConn.sync();
     }
 
-    @SuppressWarnings("unused")
     protected RedisScriptingCommands<String, String> script() {
         return this.lettuceClusterConn.sync();
     }
 
-    @SuppressWarnings("unused")
     protected RedisServerCommands<String, String> server() {
         return this.lettuceClusterConn.sync();
     }

@@ -47,42 +47,34 @@ public class RedisSyncSingleStorage implements RedisSyncStorage {
     // A thread-safe connection to a redis server. Multiple threads may share one StatefulRedisConnection
     private StatefulRedisConnection<String, String> lettuceConn;
 
-    @SuppressWarnings("unused")
     protected RedisHashCommands<String, String> hash() {
         return this.lettuceConn.sync();
     }
 
-    @SuppressWarnings("unused")
     protected RedisKeyCommands<String, String> key() {
         return this.lettuceConn.sync();
     }
 
-    @SuppressWarnings("unused")
     protected RedisStringCommands<String, String> string() {
         return this.lettuceConn.sync();
     }
 
-    @SuppressWarnings("unused")
     protected RedisListCommands<String, String> list() {
         return this.lettuceConn.sync();
     }
 
-    @SuppressWarnings("unused")
     protected RedisSetCommands<String, String> set() {
         return this.lettuceConn.sync();
     }
 
-    @SuppressWarnings("unused")
     protected RedisSortedSetCommands<String, String> sortedSet() {
         return this.lettuceConn.sync();
     }
 
-    @SuppressWarnings("unused")
     protected RedisScriptingCommands<String, String> script() {
         return this.lettuceConn.sync();
     }
 
-    @SuppressWarnings("unused")
     protected RedisServerCommands<String, String> server() {
         return this.lettuceConn.sync();
     }
@@ -208,14 +200,16 @@ public class RedisSyncSingleStorage implements RedisSyncStorage {
         return Math.toIntExact(script().eval(RedisLua.INCRLIMIT, ScriptOutputType.INTEGER, new String[]{RedisKey.nextPacketId(clientId)}, "65535"));
     }
 
-    @Override
+    @SuppressWarnings("rawtypes")
+	@Override
     public InternalMessage getInFlightMessage(String clientId, int packetId) {
         InternalMessage m = mapToInternal(hash().hgetall(RedisKey.inFlightMessage(clientId, packetId)));
         if (m == null) removeInFlightMessage(clientId, packetId);
         return m;
     }
 
-    @Override
+    @SuppressWarnings("rawtypes")
+	@Override
     public void addInFlightMessage(String clientId, int packetId, InternalMessage msg, boolean dup) {
         Map<String, String> map = internalToMap(msg);
         map.put("dup", BooleanUtils.toString(dup, "1", "0"));
@@ -224,7 +218,8 @@ public class RedisSyncSingleStorage implements RedisSyncStorage {
         hash().hmset(RedisKey.inFlightMessage(clientId, packetId), map);
     }
 
-    @Override
+    @SuppressWarnings("rawtypes")
+	@Override
     public void addInFlightMessage(String clientId, int packetId, InternalMessage msg, boolean dup, long ttl) {
         addInFlightMessage(clientId, packetId, msg, dup);
         key().expire(RedisKey.inFlightMessage(clientId, packetId), ttl);
@@ -236,7 +231,8 @@ public class RedisSyncSingleStorage implements RedisSyncStorage {
         key().del(RedisKey.inFlightMessage(clientId, packetId));
     }
 
-    @Override
+    @SuppressWarnings("rawtypes")
+	@Override
     public List<InternalMessage> getAllInFlightMessages(String clientId) {
         List<InternalMessage> r = new ArrayList<>();
         List<String> ids = list().lrange(RedisKey.inFlightList(clientId), 0, -1);

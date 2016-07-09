@@ -15,7 +15,6 @@ import java.util.Properties;
 /**
  * Application Communicator implementation for Kafka
  */
-@SuppressWarnings("unused")
 public class KafkaApplicationCommunicator extends KafkaCommunicator implements ApplicationCommunicator {
 
     private static final Logger logger = LoggerFactory.getLogger(KafkaApplicationCommunicator.class);

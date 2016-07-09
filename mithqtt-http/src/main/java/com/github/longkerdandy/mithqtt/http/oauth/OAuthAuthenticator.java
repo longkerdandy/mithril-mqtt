@@ -1,8 +1,9 @@
 package com.github.longkerdandy.mithqtt.http.oauth;
 
 import com.github.longkerdandy.mithqtt.api.auth.Authenticator;
+import com.github.longkerdandy.mithqtt.http.entity.UserPrincipal;
 import com.google.common.base.Optional;
-import com.sun.security.auth.UserPrincipal;
+
 import io.dropwizard.auth.AuthenticationException;
 import org.apache.commons.lang3.StringUtils;
 

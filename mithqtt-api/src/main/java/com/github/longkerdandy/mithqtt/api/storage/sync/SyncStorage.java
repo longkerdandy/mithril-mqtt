@@ -12,7 +12,6 @@ import java.util.concurrent.locks.Lock;
 /**
  * Synchronized Storage
  */
-@SuppressWarnings("unused")
 public interface SyncStorage {
 
     /**
@@ -119,6 +118,7 @@ public interface SyncStorage {
      * @param packetId Packet Id
      * @return In-Flight Message
      */
+    @SuppressWarnings("rawtypes")
     InternalMessage getInFlightMessage(String clientId, int packetId);
 
     /**
@@ -129,6 +129,7 @@ public interface SyncStorage {
      * @param msg      In-Flight Message
      * @param dup      Duplicated
      */
+    @SuppressWarnings("rawtypes")
     void addInFlightMessage(String clientId, int packetId, InternalMessage msg, boolean dup);
 
     /**
@@ -140,7 +141,8 @@ public interface SyncStorage {
      * @param dup      Duplicated
      * @param ttl      Time To Live in seconds
      */
-    void addInFlightMessage(String clientId, int packetId, InternalMessage msg, boolean dup, long ttl);
+    @SuppressWarnings("rawtypes")
+	void addInFlightMessage(String clientId, int packetId, InternalMessage msg, boolean dup, long ttl);
 
     /**
      * Remove specific in-flight message for the client
@@ -160,7 +162,8 @@ public interface SyncStorage {
      * @param clientId Client Id
      * @return List of Internal Message
      */
-    List<InternalMessage> getAllInFlightMessages(String clientId);
+    @SuppressWarnings("rawtypes")
+	List<InternalMessage> getAllInFlightMessages(String clientId);
 
     /**
      * Remove all in-flight message for the client

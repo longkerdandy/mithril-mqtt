@@ -3,7 +3,6 @@ package com.github.longkerdandy.mithqtt.api.comm;
 /**
  * Application Listener Factory
  */
-@SuppressWarnings("unused")
 public interface ApplicationListenerFactory {
 
     /**

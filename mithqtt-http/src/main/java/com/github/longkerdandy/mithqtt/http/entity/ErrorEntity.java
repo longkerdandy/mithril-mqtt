@@ -3,7 +3,6 @@ package com.github.longkerdandy.mithqtt.http.entity;
 /**
  * Error Response
  */
-@SuppressWarnings("unused")
 public class ErrorEntity<T> {
 
     private int code;

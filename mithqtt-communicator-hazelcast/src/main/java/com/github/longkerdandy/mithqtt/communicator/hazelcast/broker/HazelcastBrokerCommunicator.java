@@ -19,7 +19,6 @@ import java.util.concurrent.TimeUnit;
 /**
  * Broker Communicator implementation for Hazelcast
  */
-@SuppressWarnings("unused")
 public class HazelcastBrokerCommunicator implements BrokerCommunicator {
 
     private static final Logger logger = LoggerFactory.getLogger(HazelcastBrokerCommunicator.class);
@@ -29,9 +28,11 @@ public class HazelcastBrokerCommunicator implements BrokerCommunicator {
 
     // broker
     protected String BROKER_TOPIC_PREFIX;
+    @SuppressWarnings("rawtypes")
     protected Ringbuffer<InternalMessage> brokerRing;
 
     // application
+    @SuppressWarnings("rawtypes")
     protected Ringbuffer<InternalMessage> applicationRing;
 
     // executor
@@ -73,11 +74,13 @@ public class HazelcastBrokerCommunicator implements BrokerCommunicator {
         }
     }
 
+    @SuppressWarnings("rawtypes")
     public void sendToBroker(String brokerId, InternalMessage message) {
         Ringbuffer<InternalMessage> ring = this.hazelcast.getRingbuffer(BROKER_TOPIC_PREFIX + "." + brokerId);
         sendMessage(ring, message);
     }
 
+    @SuppressWarnings("rawtypes")
     public void sendToApplication(InternalMessage message) {
         sendMessage(this.applicationRing, message);
     }
@@ -88,6 +91,7 @@ public class HazelcastBrokerCommunicator implements BrokerCommunicator {
      * @param ring    Hazelcast RingBuffer
      * @param message Internal Message
      */
+    @SuppressWarnings("rawtypes")
     protected void sendMessage(Ringbuffer<InternalMessage> ring, InternalMessage message) {
         ring.addAsync(message, OverflowPolicy.OVERWRITE).andThen(new ExecutionCallback<Long>() {
             @Override

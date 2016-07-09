@@ -5,10 +5,13 @@ import java.io.Serializable;
 /**
  * Represent MQTT PUBLISH Message's VariableHeader and Payload
  */
-@SuppressWarnings("unused")
 public class Publish implements Serializable {
 
-    private String topicName;
+    /**
+	 * 
+	 */
+	private static final long serialVersionUID = -2577207897796728212L;
+	private String topicName;
     private int packetId;
     private byte[] payload;
 

@@ -5,10 +5,13 @@ import java.io.Serializable;
 /**
  * Represent MQTT DISCONNECT Message
  */
-@SuppressWarnings("unused")
 public class Disconnect implements Serializable {
 
-    private boolean cleanSession;
+    /**
+	 * 
+	 */
+	private static final long serialVersionUID = -217516881033853649L;
+	private boolean cleanSession;
     // cleanExit exit means client sent DISCONNECT before closing the connection
     private boolean cleanExit;
 

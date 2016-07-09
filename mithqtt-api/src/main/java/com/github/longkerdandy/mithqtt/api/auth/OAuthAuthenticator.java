@@ -3,7 +3,6 @@ package com.github.longkerdandy.mithqtt.api.auth;
 /**
  * OAuth Authenticator
  */
-@SuppressWarnings("unused")
 public interface OAuthAuthenticator  extends Authenticator {
 
     /**

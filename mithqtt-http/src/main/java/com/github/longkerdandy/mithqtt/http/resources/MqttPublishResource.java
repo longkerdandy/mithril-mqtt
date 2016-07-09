@@ -7,6 +7,7 @@ import com.github.longkerdandy.mithqtt.api.metrics.MetricsService;
 import com.github.longkerdandy.mithqtt.http.entity.ErrorCode;
 import com.github.longkerdandy.mithqtt.http.entity.ErrorEntity;
 import com.github.longkerdandy.mithqtt.http.entity.ResultEntity;
+import com.github.longkerdandy.mithqtt.http.entity.UserPrincipal;
 import com.github.longkerdandy.mithqtt.http.exception.AuthorizeException;
 import com.github.longkerdandy.mithqtt.http.exception.ValidateException;
 import com.github.longkerdandy.mithqtt.http.util.Validator;
@@ -14,7 +15,7 @@ import com.github.longkerdandy.mithqtt.storage.redis.sync.RedisSyncStorage;
 import com.github.longkerdandy.mithqtt.util.Topics;
 import com.github.longkerdandy.mithqtt.api.auth.Authenticator;
 import com.github.longkerdandy.mithqtt.api.comm.HttpCommunicator;
-import com.sun.security.auth.UserPrincipal;
+
 import io.dropwizard.auth.Auth;
 import io.netty.handler.codec.mqtt.MqttMessageType;
 import io.netty.handler.codec.mqtt.MqttQoS;
@@ -47,12 +48,15 @@ public class MqttPublishResource extends AbstractResource {
 
     @PermitAll
     @POST
-    public ResultEntity<Boolean> publish(@PathParam("clientId") String clientId, @Auth UserPrincipal user, @QueryParam("protocol") @DefaultValue("4") byte protocol,
-                                         @QueryParam("dup") @DefaultValue("false") boolean dup, @QueryParam("qos") @DefaultValue("0") int qos,
-                                         @QueryParam("topicName") String topicName, @QueryParam("packetId") @DefaultValue("0") int packetId,
-                                         String body) throws UnsupportedEncodingException {
+    @SuppressWarnings("rawtypes")
+	public ResultEntity<Boolean> publish(@PathParam("clientId") String clientId, @Auth UserPrincipal user,
+			@QueryParam("protocolname") @DefaultValue("MQTT") String protocolname,
+			@QueryParam("protocol") @DefaultValue("4") byte protocol,
+			@QueryParam("dup") @DefaultValue("false") boolean dup, @QueryParam("qos") @DefaultValue("0") int qos,
+			@QueryParam("topicName") String topicName, @QueryParam("packetId") @DefaultValue("0") int packetId,
+			String body) throws UnsupportedEncodingException {
         String userName = user.getName();
-        MqttVersion version = MqttVersion.fromProtocolLevel(protocol);
+        MqttVersion version = MqttVersion.fromProtocolNameAndLevel(protocolname, protocol);
         byte[] payload = body == null ? null : body.getBytes("ISO-8859-1");
 
         // HTTP interface require valid Client Id

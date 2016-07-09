@@ -19,7 +19,6 @@ import java.util.concurrent.TimeUnit;
 /**
  * Application Communicator implementation for Hazelcast
  */
-@SuppressWarnings("unused")
 public class HazelcastApplicationCommunicator implements ApplicationCommunicator {
 
     private static final Logger logger = LoggerFactory.getLogger(HazelcastApplicationCommunicator.class);
@@ -28,7 +27,8 @@ public class HazelcastApplicationCommunicator implements ApplicationCommunicator
     protected HazelcastInstance hazelcast;
 
     // application
-    protected Ringbuffer<InternalMessage> applicationRing;
+    @SuppressWarnings("rawtypes")
+	protected Ringbuffer<InternalMessage> applicationRing;
 
     // executor
     private ExecutorService executor;
@@ -69,7 +69,8 @@ public class HazelcastApplicationCommunicator implements ApplicationCommunicator
      * @param ring    Hazelcast RingBuffer
      * @param message Internal Message
      */
-    protected void sendMessage(Ringbuffer<InternalMessage> ring, InternalMessage message) {
+    @SuppressWarnings("rawtypes")
+	protected void sendMessage(Ringbuffer<InternalMessage> ring, InternalMessage message) {
         ring.addAsync(message, OverflowPolicy.OVERWRITE).andThen(new ExecutionCallback<Long>() {
             @Override
             public void onResponse(Long response) {

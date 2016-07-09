@@ -155,7 +155,7 @@ public class MqttBroker {
                             p.addLast("bytesMetrics", new BytesMetricsHandler(metrics, brokerId));
                         }
                         // mqtt encoder & decoder
-                        p.addLast("encoder", new MqttEncoder());
+                        p.addLast("encoder", MqttEncoder.INSTANCE);
                         p.addLast("decoder", new MqttDecoder());
                         // metrics
                         if (metricsEnabled) {

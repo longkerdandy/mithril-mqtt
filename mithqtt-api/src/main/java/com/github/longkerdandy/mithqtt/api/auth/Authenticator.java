@@ -1,6 +1,6 @@
 package com.github.longkerdandy.mithqtt.api.auth;
 
-import io.netty.handler.codec.mqtt.MqttGrantedQoS;
+import io.netty.handler.codec.mqtt.MqttQoS;
 import io.netty.handler.codec.mqtt.MqttTopicSubscription;
 import org.apache.commons.configuration.AbstractConfiguration;
 
@@ -9,7 +9,6 @@ import java.util.List;
 /**
  * Authenticator
  */
-@SuppressWarnings("unused")
 public interface Authenticator {
 
     /**
@@ -54,6 +53,6 @@ public interface Authenticator {
      * @param requestSubscriptions List of request Topic Subscription
      * @return List of granted QoS
      */
-    List<MqttGrantedQoS> authSubscribe(String clientId, String userName, List<MqttTopicSubscription> requestSubscriptions);
+    List<MqttQoS> authSubscribe(String clientId, String userName, List<MqttTopicSubscription> requestSubscriptions);
 
 }

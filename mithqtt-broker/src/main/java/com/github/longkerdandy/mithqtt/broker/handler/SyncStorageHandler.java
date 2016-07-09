@@ -26,6 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -138,9 +139,9 @@ public class SyncStorageHandler extends SimpleChannelInboundHandler<MqttMessage>
     }
 
     protected void onConnect(ChannelHandlerContext ctx, MqttConnectMessage msg) {
-        this.version = MqttVersion.fromProtocolNameAndLevel(msg.variableHeader().protocolName(), (byte) msg.variableHeader().protocolLevel());
-        this.clientId = msg.payload().clientId();
-        this.cleanSession = msg.variableHeader().cleanSession();
+        this.version = MqttVersion.fromProtocolNameAndLevel(msg.variableHeader().name(), (byte) msg.variableHeader().version());
+        this.clientId = msg.payload().clientIdentifier();
+        this.cleanSession = msg.variableHeader().isCleanSession();
 
         // A Server MAY allow a Client to supply a ClientId that has a length of zero bytes, however if it does so the
         // Server MUST treat this as a special case and assign a unique ClientId to that Client. It MUST then
@@ -189,8 +190,8 @@ public class SyncStorageHandler extends SimpleChannelInboundHandler<MqttMessage>
             return;
         }
 
-        boolean userNameFlag = msg.variableHeader().userNameFlag();
-        boolean passwordFlag = msg.variableHeader().passwordFlag();
+        boolean userNameFlag = msg.variableHeader().hasUserName();
+        boolean passwordFlag = msg.variableHeader().hasPassword();
         this.userName = msg.payload().userName();
         String password = msg.payload().password();
         boolean malformed = false;
@@ -357,12 +358,12 @@ public class SyncStorageHandler extends SimpleChannelInboundHandler<MqttMessage>
             // Server on receipt of a DISCONNECT Packet.
             String willTopic = msg.payload().willTopic();
             String willMessage = msg.payload().willMessage();
-            if (msg.variableHeader().willFlag()
+            if (msg.variableHeader().isWillFlag()
                     && StringUtils.isNoneEmpty(willTopic) && this.validator.isTopicNameValid(willTopic)
                     && StringUtils.isNotEmpty(willMessage)) {
                 this.willMessage = (MqttPublishMessage) MqttMessageFactory.newMessage(
-                        new MqttFixedHeader(MqttMessageType.PUBLISH, false, msg.variableHeader().willQos(), msg.variableHeader().willRetain(), 0),
-                        MqttPublishVariableHeader.from(willTopic),
+                        new MqttFixedHeader(MqttMessageType.PUBLISH, false, MqttQoS.valueOf(msg.variableHeader().willQos()), msg.variableHeader().isWillRetain(), 0),
+                        new MqttPublishVariableHeader (willTopic, 0),
                         Unpooled.wrappedBuffer(willMessage.getBytes())
                 );
             }
@@ -370,8 +371,8 @@ public class SyncStorageHandler extends SimpleChannelInboundHandler<MqttMessage>
             // If the Keep Alive value is non-zero and the Server does not receive a Control Packet from the Client
             // within one and a half times the Keep Alive time period, it MUST disconnect the Network Connection to the
             // Client as if the network had failed
-            if (msg.variableHeader().keepAlive() > 0 && msg.variableHeader().keepAlive() <= this.keepAliveMax)
-                this.keepAlive = msg.variableHeader().keepAlive();
+            if (msg.variableHeader().keepAliveTimeSeconds() > 0 && msg.variableHeader().keepAliveTimeSeconds() <= this.keepAliveMax)
+                this.keepAlive = msg.variableHeader().keepAliveTimeSeconds();
             if (ctx.pipeline().names().contains("idleHandler"))
                 ctx.pipeline().remove("idleHandler");
             ctx.pipeline().addFirst("idleHandler", new IdleStateHandler(0, 0, Math.round(this.keepAlive * 1.5f)));
@@ -408,10 +409,10 @@ public class SyncStorageHandler extends SimpleChannelInboundHandler<MqttMessage>
         }
 
         // boolean dup = msg.fixedHeader().dup();
-        MqttQoS qos = msg.fixedHeader().qos();
-        boolean retain = msg.fixedHeader().retain();
+        MqttQoS qos = msg.fixedHeader().qosLevel();
+        boolean retain = msg.fixedHeader().isRetain();
         String topicName = msg.variableHeader().topicName();
-        int packetId = msg.variableHeader().packetId();
+        int packetId = msg.variableHeader().messageId();
 
         // The Topic Name in the PUBLISH Packet MUST NOT contain wildcard characters
         // Validate Topic Name based on configuration
@@ -448,7 +449,7 @@ public class SyncStorageHandler extends SimpleChannelInboundHandler<MqttMessage>
                     ctx,
                     MqttMessageFactory.newMessage(
                             new MqttFixedHeader(MqttMessageType.PUBACK, false, MqttQoS.AT_MOST_ONCE, false, 0),
-                            MqttPacketIdVariableHeader.from(packetId),
+                            MqttMessageIdVariableHeader.from(packetId),
                             null),
                     this.clientId,
                     packetId,
@@ -466,7 +467,7 @@ public class SyncStorageHandler extends SimpleChannelInboundHandler<MqttMessage>
                     ctx,
                     MqttMessageFactory.newMessage(
                             new MqttFixedHeader(MqttMessageType.PUBREC, false, MqttQoS.AT_MOST_ONCE, false, 0),
-                            MqttPacketIdVariableHeader.from(packetId),
+                            MqttMessageIdVariableHeader.from(packetId),
                             null),
                     this.clientId,
                     packetId,
@@ -566,7 +567,7 @@ public class SyncStorageHandler extends SimpleChannelInboundHandler<MqttMessage>
         subscriptions.forEach((cid, qos) -> {
 
             // Compare publish QoS and subscription QoS
-            MqttQoS fQos = msg.fixedHeader().qos().value() > qos.value() ? qos : msg.fixedHeader().qos();
+            MqttQoS fQos = msg.fixedHeader().qosLevel().value() > qos.value() ? qos : msg.fixedHeader().qosLevel();
 
             // Each time a Client sends a new packet of one of these
             // types it MUST assign it a currently unused Packet Identifier. If a Client re-sends a
@@ -623,8 +624,8 @@ public class SyncStorageHandler extends SimpleChannelInboundHandler<MqttMessage>
 
         logger.debug("Message received: Received PUBACK message from client {} user {}", this.clientId, this.userName);
 
-        MqttPacketIdVariableHeader variable = (MqttPacketIdVariableHeader) msg.variableHeader();
-        int packetId = variable.packetId();
+        MqttMessageIdVariableHeader variable = (MqttMessageIdVariableHeader) msg.variableHeader();
+        int packetId = variable.messageId();
 
         // In the QoS 1 delivery protocol, the Sender
         // MUST treat the PUBLISH Packet as “unacknowledged” until it has received the corresponding
@@ -642,8 +643,8 @@ public class SyncStorageHandler extends SimpleChannelInboundHandler<MqttMessage>
 
         logger.debug("Message received: Received PUBREC message from client {} user {}", this.clientId, this.userName);
 
-        MqttPacketIdVariableHeader variable = (MqttPacketIdVariableHeader) msg.variableHeader();
-        int packetId = variable.packetId();
+        MqttMessageIdVariableHeader variable = (MqttMessageIdVariableHeader) msg.variableHeader();
+        int packetId = variable.messageId();
 
         // In the QoS 2 delivery protocol, the Sender
         // MUST treat the PUBLISH packet as “unacknowledged” until it has received the corresponding
@@ -657,7 +658,7 @@ public class SyncStorageHandler extends SimpleChannelInboundHandler<MqttMessage>
         // Send back PUBREL
         MqttMessage pubrel = MqttMessageFactory.newMessage(
                 new MqttFixedHeader(MqttMessageType.PUBREL, false, MqttQoS.AT_LEAST_ONCE, false, 0),
-                MqttPacketIdVariableHeader.from(packetId),
+                MqttMessageIdVariableHeader.from(packetId),
                 null);
         logger.trace("Message response: Send PUBREL back to client {}", this.clientId);
         this.registry.sendMessage(ctx, pubrel, this.clientId, packetId, true);
@@ -678,8 +679,8 @@ public class SyncStorageHandler extends SimpleChannelInboundHandler<MqttMessage>
 
         logger.debug("Message received: Received PUBREL message from client {} user {}", this.clientId, this.userName);
 
-        MqttPacketIdVariableHeader variable = (MqttPacketIdVariableHeader) msg.variableHeader();
-        int packetId = variable.packetId();
+        MqttMessageIdVariableHeader variable = (MqttMessageIdVariableHeader) msg.variableHeader();
+        int packetId = variable.messageId();
 
         // In the QoS 2 delivery protocol, the Receiver
         // MUST respond to a PUBREL packet by sending a PUBCOMP packet containing the same
@@ -689,7 +690,7 @@ public class SyncStorageHandler extends SimpleChannelInboundHandler<MqttMessage>
         this.store.removeQoS2MessageId(this.clientId, packetId);
         MqttMessage comp = MqttMessageFactory.newMessage(
                 new MqttFixedHeader(MqttMessageType.PUBCOMP, false, MqttQoS.AT_MOST_ONCE, false, 0),
-                MqttPacketIdVariableHeader.from(packetId),
+                MqttMessageIdVariableHeader.from(packetId),
                 null);
         logger.trace("Message response: Send PUBCOMP back to client {}", this.clientId);
         this.registry.sendMessage(ctx, comp, this.clientId, packetId, true);
@@ -704,8 +705,8 @@ public class SyncStorageHandler extends SimpleChannelInboundHandler<MqttMessage>
 
         logger.debug("Message received: Received PUBCOMP message from client {} user {}", this.clientId, this.userName);
 
-        MqttPacketIdVariableHeader variable = (MqttPacketIdVariableHeader) msg.variableHeader();
-        int packetId = variable.packetId();
+        MqttMessageIdVariableHeader variable = (MqttMessageIdVariableHeader) msg.variableHeader();
+        int packetId = variable.messageId();
 
         // In the QoS 2 delivery protocol, the Sender
         // MUST treat the PUBREL packet as “unacknowledged” until it has received the corresponding
@@ -721,13 +722,13 @@ public class SyncStorageHandler extends SimpleChannelInboundHandler<MqttMessage>
             return;
         }
 
-        int packetId = msg.variableHeader().packetId();
-        List<MqttTopicSubscription> requestSubscriptions = msg.payload().subscriptions();
+        int packetId = msg.variableHeader().messageId();
+        List<MqttTopicSubscription> requestSubscriptions = msg.payload().topicSubscriptions();
 
         // Validate Topic Filter based on configuration
         for (MqttTopicSubscription subscription : requestSubscriptions) {
-            if (!this.validator.isTopicFilterValid(subscription.topic())) {
-                logger.debug("Protocol violation: Client {} subscription {} is not valid based on configuration, disconnect the client", this.clientId, subscription.topic());
+            if (!this.validator.isTopicFilterValid(subscription.topicName())) {
+                logger.debug("Protocol violation: Client {} subscription {} is not valid based on configuration, disconnect the client", this.clientId, subscription.topicName());
                 ctx.close();
                 return;
             }
@@ -736,8 +737,8 @@ public class SyncStorageHandler extends SimpleChannelInboundHandler<MqttMessage>
         logger.debug("Message received: Received SUBSCRIBE message from client {} user {}", this.clientId, this.userName);
 
         // Authorize client subscribe using provided Authenticator
-        List<MqttGrantedQoS> grantedQosLevels = this.authenticator.authSubscribe(this.clientId, this.userName, requestSubscriptions);
-        logger.trace("Authorization granted: Subscribe to topic {} granted as {} for client {}", ArrayUtils.toString(msg.payload().subscriptions()), ArrayUtils.toString(grantedQosLevels), this.clientId);
+        List<MqttQoS> grantedQosLevels = this.authenticator.authSubscribe(this.clientId, this.userName, requestSubscriptions);
+        logger.trace("Authorization granted: Subscribe to topic {} granted as {} for client {}", ArrayUtils.toString(msg.payload().topicSubscriptions()), ArrayUtils.toString(grantedQosLevels), this.clientId);
 
         // If a Server receives a SUBSCRIBE packet that contains multiple Topic Filters it MUST handle that packet
         // as if it had received a sequence of multiple SUBSCRIBE packets, except that it combines their responses
@@ -746,24 +747,28 @@ public class SyncStorageHandler extends SimpleChannelInboundHandler<MqttMessage>
         // SUBACK Packet. The SUBACK Packet MUST have the same Packet Identifier as the
         // SUBSCRIBE Packet that it is acknowledging.
         logger.debug("Message response: Send SUBACK back to client {}", this.clientId);
+        List<Integer> qosLevels = new ArrayList<Integer>();
+        for(MqttQoS qos: grantedQosLevels) {
+        	qosLevels.add(qos.value());
+        }
         this.registry.sendMessage(
                 ctx,
                 MqttMessageFactory.newMessage(
                         new MqttFixedHeader(MqttMessageType.SUBACK, false, MqttQoS.AT_MOST_ONCE, false, 0),
-                        MqttPacketIdVariableHeader.from(packetId),
-                        new MqttSubAckPayload(grantedQosLevels)),
+                        MqttMessageIdVariableHeader.from(packetId),
+                        new MqttSubAckPayload(qosLevels)),
                 this.clientId,
                 packetId,
                 true);
 
         for (int i = 0; i < requestSubscriptions.size(); i++) {
 
-            MqttGrantedQoS grantedQoS = grantedQosLevels.get(i);
-            String topic = requestSubscriptions.get(i).topic();
+            MqttQoS grantedQoS = grantedQosLevels.get(i);
+            String topic = requestSubscriptions.get(i).topicName();
             List<String> topicLevels = Topics.sanitize(topic);
 
             // Granted only
-            if (grantedQoS != MqttGrantedQoS.FAILURE) {
+            if (grantedQoS != MqttQoS.FAILURE) {
 
                 // If a Server receives a SUBSCRIBE Packet containing a Topic Filter that is identical to an existing
                 // Subscription’s Topic Filter then it MUST completely replace that existing Subscription with a new
@@ -834,7 +839,7 @@ public class SyncStorageHandler extends SimpleChannelInboundHandler<MqttMessage>
 
         logger.debug("Message received: Received UNSUBSCRIBE message from client {} user {} topics {}", this.clientId, this.userName, ArrayUtils.toString(msg.payload().topics()));
 
-        int packetId = msg.variableHeader().packetId();
+        int packetId = msg.variableHeader().messageId();
 
         // The Server MUST respond to an UNSUBSUBCRIBE request by sending an UNSUBACK packet. The
         // UNSUBACK Packet MUST have the same Packet Identifier as the UNSUBSCRIBE Packet.
@@ -848,7 +853,7 @@ public class SyncStorageHandler extends SimpleChannelInboundHandler<MqttMessage>
                 ctx,
                 MqttMessageFactory.newMessage(
                         new MqttFixedHeader(MqttMessageType.UNSUBACK, false, MqttQoS.AT_MOST_ONCE, false, 0),
-                        MqttPacketIdVariableHeader.from(packetId),
+                        MqttMessageIdVariableHeader.from(packetId),
                         null),
                 this.clientId,
                 packetId,
@@ -946,9 +951,9 @@ public class SyncStorageHandler extends SimpleChannelInboundHandler<MqttMessage>
             // The Server closes the Network Connection because of a protocol error.
             if (this.willMessage != null) {
 
-                MqttQoS willQos = this.willMessage.fixedHeader().qos();
+                MqttQoS willQos = this.willMessage.fixedHeader().qosLevel();
                 String willTopic = this.willMessage.variableHeader().topicName();
-                boolean willRetain = this.willMessage.fixedHeader().retain();
+                boolean willRetain = this.willMessage.fixedHeader().isRetain();
 
                 AuthorizeResult result = this.authenticator.authPublish(this.clientId, this.userName, willTopic, willQos.value(), willRetain);
                 // Authorize successful

@@ -16,7 +16,6 @@ import java.util.concurrent.TimeoutException;
 /**
  * Broker Communicator implementation for RabbitMQ
  */
-@SuppressWarnings("unused")
 public class RabbitMQBrokerCommunicator implements BrokerCommunicator {
 
     private static final Logger logger = LoggerFactory.getLogger(RabbitMQBrokerCommunicator.class);
@@ -76,6 +75,7 @@ public class RabbitMQBrokerCommunicator implements BrokerCommunicator {
     }
 
     @Override
+    @SuppressWarnings("rawtypes") 
     public void sendToBroker(String brokerId, InternalMessage message) {
         String brokerTopic = BROKER_TOPIC_PREFIX + "." + brokerId;
         try {
@@ -87,6 +87,7 @@ public class RabbitMQBrokerCommunicator implements BrokerCommunicator {
     }
 
     @Override
+    @SuppressWarnings("rawtypes") 
     public void sendToApplication(InternalMessage message) {
         try {
             this.channel.basicPublish(APPLICATION_TOPIC, message.getMessageType().name(), MessageProperties.BASIC, JSONs.Mapper.writeValueAsBytes(message));

@@ -3,6 +3,7 @@ subprojects {
     apply plugin: 'java'
     apply plugin: 'maven'
     apply plugin: 'maven-publish'
+    apply plugin: 'eclipse'
 
     // Group Id
     group 'com.github.longkerdandy'
