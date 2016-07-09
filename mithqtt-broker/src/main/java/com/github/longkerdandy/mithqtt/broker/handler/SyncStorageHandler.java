@@ -163,23 +163,25 @@ public class SyncStorageHandler extends SimpleChannelInboundHandler<MqttMessage>
                         true);
                 ctx.close();
                 return;
+            } else {
+            	
             }
-        }
-
-        // Validate clientId based on configuration
-        if (!this.validator.isClientIdValid(this.clientId)) {
-            logger.debug("Protocol violation: Client id {} not valid based on configuration, send CONNACK and disconnect the client", this.clientId);
-            this.registry.sendMessage(
-                    ctx,
-                    MqttMessageFactory.newMessage(
-                            new MqttFixedHeader(MqttMessageType.CONNACK, false, MqttQoS.AT_MOST_ONCE, false, 0),
-                            new MqttConnAckVariableHeader(MqttConnectReturnCode.CONNECTION_REFUSED_IDENTIFIER_REJECTED, false),
-                            null),
-                    "INVALID",
-                    null,
-                    true);
-            ctx.close();
-            return;
+        } else {
+        	// Validate clientId based on configuration
+        	if (!this.validator.isClientIdValid(this.clientId)) {  
+	            logger.debug("Protocol violation: Client id {} not valid based on configuration, send CONNACK and disconnect the client", this.clientId);
+	            this.registry.sendMessage(
+	                    ctx,
+	                    MqttMessageFactory.newMessage(
+	                            new MqttFixedHeader(MqttMessageType.CONNACK, false, MqttQoS.AT_MOST_ONCE, false, 0),
+	                            new MqttConnAckVariableHeader(MqttConnectReturnCode.CONNECTION_REFUSED_IDENTIFIER_REJECTED, false),
+	                            null),
+	                    "INVALID",
+	                    null,
+	                    true);
+	            ctx.close();
+	            return;
+            }
         }
 
         // A Client can only send the CONNECT Packet once over a Network Connection. The Server MUST
