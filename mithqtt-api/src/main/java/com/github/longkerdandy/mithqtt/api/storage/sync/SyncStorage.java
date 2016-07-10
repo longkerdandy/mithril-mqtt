@@ -7,7 +7,6 @@ import org.apache.commons.configuration.AbstractConfiguration;
 
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.locks.Lock;
 
 /**
  * Synchronized Storage
@@ -29,12 +28,26 @@ public interface SyncStorage {
     void destroy();
 
     /**
-     * Returns distributed lock instance by name.
+     * Distributed lock instance by name.
      *
      * @param name of the distributed lock
-     * @return distributed lock
      */
-    Lock getLock(String name);
+    void lock(String name);
+
+    /**
+     * Distributed lock instance by name.
+     *
+     * @param name of the distributed lock
+     * @param timeOut for the lock
+     */
+    void lock(String name, long timeoutInMs);
+
+    /**
+     * Unlock Distributed Lock Instance by Name.
+     *
+     * @param name of the distributed lock
+     */
+     void unlock(String name);
 
     /**
      * Iteration connected clients for the mqtt broker node (id)

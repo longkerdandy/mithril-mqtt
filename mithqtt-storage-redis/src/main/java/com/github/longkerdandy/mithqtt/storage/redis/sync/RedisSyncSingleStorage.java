@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 
 import static com.github.longkerdandy.mithqtt.storage.redis.util.Converter.internalToMap;
@@ -140,11 +141,6 @@ public class RedisSyncSingleStorage implements RedisSyncStorage {
         this.inFlightQueueSize = config.getInt("mqtt.inflight.queue.size", 0);
         this.qos2QueueSize = config.getInt("mqtt.qos2.queue.size", 0);
         this.retainQueueSize = config.getInt("mqtt.retain.queue.size", 0);
-    }
-
-    @Override
-    public Lock getLock(String name) {
-        return this.redisson.getLock(name);
     }
 
     @Override
@@ -662,4 +658,43 @@ public class RedisSyncSingleStorage implements RedisSyncStorage {
 
         return r;
     }
+
+    private Lock getLock(String name) {
+        return this.redisson.getLock(name);
+    }
+
+     /**
+      * Distributed lock instance by name.
+      *
+      * @param name of the distributed lock
+      */
+     @Override
+	public void lock(String name) {
+		getLock(name).lock();
+	}
+
+     /**
+      * Distributed lock instance by name.
+      *
+      * @param name of the distributed lock
+      * @param timeOut for the lock
+      */
+	@Override
+	public void lock(String name, long timeoutInMs) throws RuntimeException {
+		try {
+			getLock(name).tryLock(timeoutInMs, TimeUnit.MILLISECONDS);
+		} catch (InterruptedException ie) {
+			throw new RuntimeException(ie.getMessage());
+		}
+	}
+
+    /**
+     * Unlock Distributed Lock Instance by Name.
+     *
+     * @param name of the distributed lock
+     */
+	@Override
+	public void unlock(String name) {
+		getLock(name).unlock();
+	}
 }

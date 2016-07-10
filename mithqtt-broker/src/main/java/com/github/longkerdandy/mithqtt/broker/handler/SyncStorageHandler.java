@@ -30,8 +30,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Lock;
 
 /**
  * Synchronous MQTT Handler using Storage
@@ -242,9 +240,14 @@ public class SyncStorageHandler extends SimpleChannelInboundHandler<MqttMessage>
 
             // ============================== LOCK LOCK LOCK ==============================
 
-            Lock lock = this.store.getLock(this.clientId);
             try {
-                if (!lock.tryLock(5, TimeUnit.SECONDS)) {
+                boolean locked = false;
+                try {
+                    this.store.lock(clientId, 5000);
+                    locked = true;
+                } catch(Exception e){
+                }
+                if (!locked) {
                     logger.warn("Lock failed: Failed to lock on client {}, send CONNACK and disconnect the client", this.clientId);
                     this.registry.sendMessage(
                             ctx,
@@ -331,11 +334,9 @@ public class SyncStorageHandler extends SimpleChannelInboundHandler<MqttMessage>
                 // Mark client's session as existed
                 this.store.updateSessionExist(this.clientId, this.cleanSession);
 
-            } catch (InterruptedException e) {
-                logger.error("Lock error: Interrupted when trying to lock on client {}: ", this.clientId, e);
             } finally {
                 // Always unlock
-                lock.unlock();
+                this.store.unlock(clientId);
             }
 
             // ============================== LOCK LOCK LOCK ==============================
@@ -985,10 +986,16 @@ public class SyncStorageHandler extends SimpleChannelInboundHandler<MqttMessage>
 
         // ============================== LOCK LOCK LOCK ==============================
 
-        Lock lock = this.store.getLock(this.clientId);
 
         try {
-            if (!lock.tryLock(5, TimeUnit.SECONDS)) {
+            boolean locked = false;
+            try {
+                this.store.lock(this.clientId, 5000);
+                locked = true;
+            } catch(Exception e) {
+            }
+
+            if (!locked) {
                 logger.warn("Lock failed: Failed to lock on client {}", this.clientId);
             } else {
                 logger.trace("Lock succeed: Successful lock on client {}", this.clientId);
@@ -1015,11 +1022,9 @@ public class SyncStorageHandler extends SimpleChannelInboundHandler<MqttMessage>
                     }
                 }
             }
-        } catch (InterruptedException e) {
-            logger.error("Lock error: Interrupted when trying to lock on client {}: ", this.clientId, e);
         } finally {
             // Always unlock
-            lock.unlock();
+            this.store.unlock(clientId);
         }
 
         // ============================== LOCK LOCK LOCK ==============================
