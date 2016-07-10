@@ -7,7 +7,6 @@ import com.github.longkerdandy.mithqtt.api.internal.Publish;
 /**
  * Broker's Listener for Broker Communicator
  */
-@SuppressWarnings("unused")
 public interface BrokerListener {
 
     /**

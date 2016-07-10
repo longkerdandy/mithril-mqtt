@@ -15,16 +15,18 @@ public class HazelcastBrokerWorker implements Runnable {
 
     private static final Logger logger = LoggerFactory.getLogger(HazelcastBrokerWorker.class);
 
+    @SuppressWarnings("rawtypes")
     private final Ringbuffer<InternalMessage> brokerRing;
     private final BrokerListener listener;
 
+    @SuppressWarnings("rawtypes")
     public HazelcastBrokerWorker(Ringbuffer<InternalMessage> brokerRing, BrokerListener listener) {
         this.brokerRing = brokerRing;
         this.listener = listener;
     }
 
     @Override
-    @SuppressWarnings({"unchecked", "InfiniteLoopStatement"})
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public void run() {
         try {
             // always read new messages only

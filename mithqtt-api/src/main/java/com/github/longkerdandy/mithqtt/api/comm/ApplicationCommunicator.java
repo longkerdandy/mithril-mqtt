@@ -6,7 +6,6 @@ import org.apache.commons.configuration.AbstractConfiguration;
  * Application Communicator
  * Link application to other modules
  */
-@SuppressWarnings("unused")
 public interface ApplicationCommunicator {
 
     /**

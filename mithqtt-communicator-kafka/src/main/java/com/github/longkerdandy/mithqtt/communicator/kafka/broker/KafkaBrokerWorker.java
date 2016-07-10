@@ -20,19 +20,21 @@ public class KafkaBrokerWorker implements Runnable {
 
     private static final Logger logger = LoggerFactory.getLogger(KafkaBrokerWorker.class);
 
-    private final KafkaConsumer<String, InternalMessage> consumer;
+    @SuppressWarnings("rawtypes")
+	private final KafkaConsumer<String, InternalMessage> consumer;
     private final String topic;
     private final BrokerListener listener;
 
     protected AtomicBoolean closed = new AtomicBoolean(false);
 
+    @SuppressWarnings("rawtypes")
     public KafkaBrokerWorker(KafkaConsumer<String, InternalMessage> consumer, String topic, BrokerListener listener) {
         this.consumer = consumer;
         this.topic = topic;
         this.listener = listener;
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "rawtypes"})
     @Override
     public void run() {
         try {

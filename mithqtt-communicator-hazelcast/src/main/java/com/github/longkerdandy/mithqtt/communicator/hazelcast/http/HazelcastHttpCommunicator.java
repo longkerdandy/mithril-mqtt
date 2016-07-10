@@ -14,7 +14,6 @@ import org.slf4j.LoggerFactory;
 /**
  * Http Communicator implementation for Hazelcast
  */
-@SuppressWarnings("unused")
 public class HazelcastHttpCommunicator implements HttpCommunicator {
 
     private static final Logger logger = LoggerFactory.getLogger(HazelcastHttpCommunicator.class);
@@ -42,12 +41,14 @@ public class HazelcastHttpCommunicator implements HttpCommunicator {
     }
 
     @Override
+    @SuppressWarnings("rawtypes")
     public void sendToBroker(String brokerId, InternalMessage message) {
         Ringbuffer<InternalMessage> ring = this.hazelcast.getRingbuffer(BROKER_TOPIC_PREFIX + "." + brokerId);
         sendMessage(ring, message);
     }
 
     @Override
+    @SuppressWarnings("rawtypes")
     public void sendToApplication(InternalMessage message) {
         Ringbuffer<InternalMessage> ring = this.hazelcast.getRingbuffer(APPLICATION_TOPIC);
         sendMessage(ring, message);
@@ -59,7 +60,8 @@ public class HazelcastHttpCommunicator implements HttpCommunicator {
      * @param ring    Hazelcast RingBuffer
      * @param message Internal Message
      */
-    protected void sendMessage(Ringbuffer<InternalMessage> ring, InternalMessage message) {
+    @SuppressWarnings("rawtypes")
+	protected void sendMessage(Ringbuffer<InternalMessage> ring, InternalMessage message) {
         ring.addAsync(message, OverflowPolicy.OVERWRITE).andThen(new ExecutionCallback<Long>() {
             @Override
             public void onResponse(Long response) {

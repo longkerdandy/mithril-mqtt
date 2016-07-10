@@ -11,7 +11,7 @@ import java.util.Map;
 /**
  * Internal Message Serializer
  */
-@SuppressWarnings("unused")
+@SuppressWarnings("rawtypes")
 public class InternalMessageSerializer implements Serializer<InternalMessage> {
 
     @Override

@@ -8,10 +8,11 @@ import javax.ws.rs.core.Response;
 /**
  * Authorize Exception
  */
-@SuppressWarnings("unused")
 public class AuthorizeException extends WebApplicationException {
 
-    /**
+	private static final long serialVersionUID = -8336814815115724806L;
+
+	/**
      * Create a HTTP 401 (Unauthorized) exception.
      */
     public AuthorizeException() {
@@ -23,6 +24,7 @@ public class AuthorizeException extends WebApplicationException {
      *
      * @param entity the error response entity
      */
+    @SuppressWarnings("rawtypes") 
     public AuthorizeException(ErrorEntity entity) {
         super(Response.status(401).entity(entity).type("application/json").build());
     }

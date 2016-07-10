@@ -3,15 +3,14 @@ package com.github.longkerdandy.mithqtt.broker;
 import com.github.longkerdandy.mithqtt.broker.comm.BrokerListenerFactoryImpl;
 import com.github.longkerdandy.mithqtt.broker.handler.BytesMetricsHandler;
 import com.github.longkerdandy.mithqtt.broker.handler.MessageMetricsHandler;
-import com.github.longkerdandy.mithqtt.broker.handler.SyncRedisHandler;
-import com.github.longkerdandy.mithqtt.storage.redis.sync.RedisSyncStorage;
+import com.github.longkerdandy.mithqtt.broker.handler.SyncStorageHandler;
+import com.github.longkerdandy.mithqtt.api.storage.sync.SyncStorage;
 import com.github.longkerdandy.mithqtt.api.auth.Authenticator;
 import com.github.longkerdandy.mithqtt.api.comm.BrokerCommunicator;
 import com.github.longkerdandy.mithqtt.api.comm.BrokerListenerFactory;
 import com.github.longkerdandy.mithqtt.api.metrics.MetricsService;
 import com.github.longkerdandy.mithqtt.broker.session.SessionRegistry;
 import com.github.longkerdandy.mithqtt.broker.util.Validator;
-import com.lambdaworks.redis.ValueScanCursor;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
 import io.netty.channel.epoll.EpollEventLoopGroup;
@@ -33,6 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.util.List;
 
 /**
  * MQTT Bridge
@@ -48,19 +48,19 @@ public class MqttBroker {
         // load config
         logger.debug("Loading MQTT broker config files ...");
         PropertiesConfiguration brokerConfig;
-        PropertiesConfiguration redisConfig;
+        PropertiesConfiguration storeConfig;
         PropertiesConfiguration communicatorConfig;
         PropertiesConfiguration authenticatorConfig;
         PropertiesConfiguration metricsConfig;
         if (args.length >= 5) {
             brokerConfig = new PropertiesConfiguration(args[0]);
-            redisConfig = new PropertiesConfiguration(args[1]);
+            storeConfig = new PropertiesConfiguration(args[1]);
             communicatorConfig = new PropertiesConfiguration(args[2]);
             authenticatorConfig = new PropertiesConfiguration(args[3]);
             metricsConfig = new PropertiesConfiguration(args[4]);
         } else {
             brokerConfig = new PropertiesConfiguration("config/broker.properties");
-            redisConfig = new PropertiesConfiguration("config/redis.properties");
+            storeConfig = new PropertiesConfiguration("config/store.properties");
             communicatorConfig = new PropertiesConfiguration("config/communicator.properties");
             authenticatorConfig = new PropertiesConfiguration("config/authenticator.properties");
             metricsConfig = new PropertiesConfiguration("config/metrics.properties");
@@ -77,12 +77,12 @@ public class MqttBroker {
         SessionRegistry registry = new SessionRegistry();
 
         // storage
-        logger.debug("Initializing redis storage ...");
-        RedisSyncStorage redis = (RedisSyncStorage) Class.forName(redisConfig.getString("storage.sync.class")).newInstance();
-        redis.init(redisConfig);
+        logger.debug("Initializing sync storage ...");
+        SyncStorage store = (SyncStorage) Class.forName(storeConfig.getString("storage.sync.class")).newInstance();
+        store.init(storeConfig);
 
         logger.debug("Clearing broker connection state in storage, this may take some time ...");
-        clearBrokerConnectionState(brokerId, redis);
+        clearBrokerConnectionState(brokerId, store);
 
         // communicator
         logger.debug("Initializing communicator ...");
@@ -111,7 +111,7 @@ public class MqttBroker {
 
         // tcp server
         logger.debug("Initializing tcp server ...");
-        InternalLoggerFactory.setDefaultFactory(new Slf4JLoggerFactory());
+        InternalLoggerFactory.setDefaultFactory(Slf4JLoggerFactory.getDefaultFactory());
         EventLoopGroup bossGroup = brokerConfig.getBoolean("netty.useEpoll") ? new EpollEventLoopGroup() : new NioEventLoopGroup();
         EventLoopGroup workerGroup = brokerConfig.getBoolean("netty.useEpoll") ? new EpollEventLoopGroup() : new NioEventLoopGroup();
         EventLoopGroup handlerGroup = brokerConfig.getBoolean("netty.useEpoll") ? new EpollEventLoopGroup() : new NioEventLoopGroup();
@@ -128,9 +128,9 @@ public class MqttBroker {
                 authenticator.destroy();
 
                 logger.debug("Clearing broker connection state in storage, this may take some time ...");
-                clearBrokerConnectionState(brokerId, redis);
+                clearBrokerConnectionState(brokerId, store);
 
-                redis.destroy();
+                store.destroy();
 
                 logger.info("MQTT broker has been shut down.");
             }
@@ -155,14 +155,14 @@ public class MqttBroker {
                             p.addLast("bytesMetrics", new BytesMetricsHandler(metrics, brokerId));
                         }
                         // mqtt encoder & decoder
-                        p.addLast("encoder", new MqttEncoder());
+                        p.addLast("encoder", MqttEncoder.INSTANCE);
                         p.addLast("decoder", new MqttDecoder());
                         // metrics
                         if (metricsEnabled) {
                             p.addLast("msgMetrics", new MessageMetricsHandler(metrics, brokerId));
                         }
                         // logic handler
-                        p.addLast(handlerGroup, "logicHandler", new SyncRedisHandler(authenticator, communicator, redis, registry, validator, brokerId, keepAlive, keepAliveMax));
+                        p.addLast(handlerGroup, "logicHandler", new SyncStorageHandler(authenticator, communicator, store, registry, validator, brokerId, keepAlive, keepAliveMax));
                     }
                 })
                 .option(ChannelOption.SO_BACKLOG, brokerConfig.getInt("netty.soBacklog"))
@@ -182,17 +182,18 @@ public class MqttBroker {
      * Loop and mark every clients currently connect to the broker as disconnect
      *
      * @param brokerId Broker Id
-     * @param redis    Redis Storage
+     * @param store    Sync Storage
      */
-    protected static void clearBrokerConnectionState(String brokerId, RedisSyncStorage redis) {
-        ValueScanCursor<String> r = redis.getConnectedClients(brokerId, "0", 100);
-        if (r.getValues() != null) {
-            r.getValues().forEach(client -> redis.removeConnectedNode(client, brokerId));
+    protected static void clearBrokerConnectionState(String brokerId, SyncStorage store) {
+        List<String> r = store.getConnectedClients(brokerId, "0", 100);
+        if (r != null) {
+            r.forEach(client -> store.removeConnectedNode(client, brokerId));
         }
-        while (!r.getCursor().equals("0")) {
-            r = redis.getConnectedClients(brokerId, r.getCursor(), 100);
-            if (r.getValues() != null) {
-                r.getValues().forEach(client -> redis.removeConnectedNode(client, brokerId));
+        final int iterPos = 0;
+        while (r != null && r.size() > 0 && !r.get(iterPos).equals("0")) {
+            r = store.getConnectedClients(brokerId, r.get(iterPos), 100);
+            if (r != null) {
+                r.forEach(client -> store.removeConnectedNode(client, brokerId));
             }
         }
     }

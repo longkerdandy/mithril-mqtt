@@ -17,7 +17,6 @@ public class RabbitMQExceptionHandler extends DefaultExceptionHandler {
     private static final Logger logger = LoggerFactory.getLogger(RabbitMQExceptionHandler.class);
 
     @Override
-    @SuppressWarnings("StatementWithEmptyBody")
     public void handleConnectionRecoveryException(Connection conn, Throwable exception) {
         // ignore java.net.ConnectException as those are
         // expected during recovery and will only produce noisy

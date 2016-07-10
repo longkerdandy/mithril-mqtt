@@ -6,10 +6,13 @@ import java.util.List;
 /**
  * Represent MQTT UNSUBSCRIBE Message's VariableHeader and Payload
  */
-@SuppressWarnings("unused")
 public class Unsubscribe implements Serializable {
 
-    private int packetId;
+    /**
+	 * 
+	 */
+	private static final long serialVersionUID = -1683392501152350169L;
+	private int packetId;
     private List<String> topics;
 
     protected Unsubscribe() {

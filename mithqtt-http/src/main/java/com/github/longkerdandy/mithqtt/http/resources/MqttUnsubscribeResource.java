@@ -8,11 +8,12 @@ import com.github.longkerdandy.mithqtt.api.metrics.MetricsService;
 import com.github.longkerdandy.mithqtt.http.entity.ErrorCode;
 import com.github.longkerdandy.mithqtt.http.entity.ErrorEntity;
 import com.github.longkerdandy.mithqtt.http.entity.ResultEntity;
+import com.github.longkerdandy.mithqtt.http.entity.UserPrincipal;
 import com.github.longkerdandy.mithqtt.http.exception.ValidateException;
 import com.github.longkerdandy.mithqtt.http.util.Validator;
 import com.github.longkerdandy.mithqtt.storage.redis.sync.RedisSyncStorage;
 import com.github.longkerdandy.mithqtt.util.Topics;
-import com.sun.security.auth.UserPrincipal;
+
 import io.dropwizard.auth.Auth;
 import io.netty.handler.codec.mqtt.MqttMessageType;
 import io.netty.handler.codec.mqtt.MqttQoS;
@@ -42,14 +43,17 @@ public class MqttUnsubscribeResource extends AbstractResource {
 
     @PermitAll
     @POST
+    @SuppressWarnings("rawtypes")
     /**
      * Handle MQTT Un-Subscribe Request in RESTful style
      */
-    public ResultEntity<Boolean> unsubscribe(@PathParam("clientId") String clientId, @Auth UserPrincipal user, @QueryParam("protocol") @DefaultValue("4") byte protocol,
+    public ResultEntity<Boolean> unsubscribe(@PathParam("clientId") String clientId, @Auth UserPrincipal user,
+    		@QueryParam("protocolname") @DefaultValue("MQTT") String protocolname,
+    		@QueryParam("protocol") @DefaultValue("4") byte protocol,
                                              @QueryParam("packetId") @DefaultValue("0") int packetId,
                                              List<String> topics) {
         String userName = user.getName();
-        MqttVersion version = MqttVersion.fromProtocolLevel(protocol);
+        MqttVersion version = MqttVersion.fromProtocolNameAndLevel(protocolname, protocol);
 
         // HTTP interface require valid Client Id
         if (!this.validator.isClientIdValid(clientId)) {

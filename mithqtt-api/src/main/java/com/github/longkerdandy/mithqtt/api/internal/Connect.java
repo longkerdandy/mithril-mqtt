@@ -7,10 +7,10 @@ import java.io.Serializable;
 /**
  * Represent MQTT CONNECT Message's VariableHeader and Payload
  */
-@SuppressWarnings("unused")
 public class Connect implements Serializable {
 
-    private boolean cleanSession;
+	private static final long serialVersionUID = 6116302599816197359L;
+	private boolean cleanSession;
     private boolean willRetain;
     private MqttQoS willQos;
     private String willTopic;

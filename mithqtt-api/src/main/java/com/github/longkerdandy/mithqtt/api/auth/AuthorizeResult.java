@@ -3,7 +3,6 @@ package com.github.longkerdandy.mithqtt.api.auth;
 /**
  * Authorization Result from Authenticator
  */
-@SuppressWarnings("unused")
 public enum AuthorizeResult {
     OK(200),
     FORBIDDEN(403);

@@ -1,6 +1,6 @@
 package com.github.longkerdandy.mithqtt.api.internal;
 
-import io.netty.handler.codec.mqtt.MqttGrantedQoS;
+import io.netty.handler.codec.mqtt.MqttQoS;
 
 import java.io.Serializable;
 import java.util.List;
@@ -8,16 +8,19 @@ import java.util.List;
 /**
  * Represent MQTT SUBACK Message's VariableHeader and Payload
  */
-@SuppressWarnings("unused")
 public class SubAck implements Serializable {
 
-    private int packetId;
-    private List<MqttGrantedQoS> grantedQoSLevels;
+    /**
+	 * 
+	 */
+	private static final long serialVersionUID = -6163088813268061614L;
+	private int packetId;
+    private List<MqttQoS> grantedQoSLevels;
 
     protected SubAck() {
     }
 
-    public SubAck(int packetId, List<MqttGrantedQoS> grantedQoSLevels) {
+    public SubAck(int packetId, List<MqttQoS> grantedQoSLevels) {
         this.packetId = packetId;
         this.grantedQoSLevels = grantedQoSLevels;
     }
@@ -30,11 +33,11 @@ public class SubAck implements Serializable {
         this.packetId = packetId;
     }
 
-    public List<MqttGrantedQoS> getGrantedQoSLevels() {
+    public List<MqttQoS> getGrantedQoSLevels() {
         return grantedQoSLevels;
     }
 
-    public void setGrantedQoSLevels(List<MqttGrantedQoS> grantedQoSLevels) {
+    public void setGrantedQoSLevels(List<MqttQoS> grantedQoSLevels) {
         this.grantedQoSLevels = grantedQoSLevels;
     }
 }

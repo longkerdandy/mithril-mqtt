@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 
 import static com.github.longkerdandy.mithqtt.storage.redis.util.Converter.internalToMap;
@@ -47,42 +48,34 @@ public class RedisSyncSingleStorage implements RedisSyncStorage {
     // A thread-safe connection to a redis server. Multiple threads may share one StatefulRedisConnection
     private StatefulRedisConnection<String, String> lettuceConn;
 
-    @SuppressWarnings("unused")
     protected RedisHashCommands<String, String> hash() {
         return this.lettuceConn.sync();
     }
 
-    @SuppressWarnings("unused")
     protected RedisKeyCommands<String, String> key() {
         return this.lettuceConn.sync();
     }
 
-    @SuppressWarnings("unused")
     protected RedisStringCommands<String, String> string() {
         return this.lettuceConn.sync();
     }
 
-    @SuppressWarnings("unused")
     protected RedisListCommands<String, String> list() {
         return this.lettuceConn.sync();
     }
 
-    @SuppressWarnings("unused")
     protected RedisSetCommands<String, String> set() {
         return this.lettuceConn.sync();
     }
 
-    @SuppressWarnings("unused")
     protected RedisSortedSetCommands<String, String> sortedSet() {
         return this.lettuceConn.sync();
     }
 
-    @SuppressWarnings("unused")
     protected RedisScriptingCommands<String, String> script() {
         return this.lettuceConn.sync();
     }
 
-    @SuppressWarnings("unused")
     protected RedisServerCommands<String, String> server() {
         return this.lettuceConn.sync();
     }
@@ -151,13 +144,8 @@ public class RedisSyncSingleStorage implements RedisSyncStorage {
     }
 
     @Override
-    public Lock getLock(String name) {
-        return this.redisson.getLock(name);
-    }
-
-    @Override
-    public ValueScanCursor<String> getConnectedClients(String node, String cursor, long count) {
-        return set().sscan(RedisKey.connectedClients(node), ScanCursor.of(cursor), ScanArgs.Builder.limit(count));
+    public List<String> getConnectedClients(String node, String cursor, long count) {
+        return set().sscan(RedisKey.connectedClients(node), ScanCursor.of(cursor), ScanArgs.Builder.limit(count)).getValues();
     }
 
     @Override
@@ -208,14 +196,16 @@ public class RedisSyncSingleStorage implements RedisSyncStorage {
         return Math.toIntExact(script().eval(RedisLua.INCRLIMIT, ScriptOutputType.INTEGER, new String[]{RedisKey.nextPacketId(clientId)}, "65535"));
     }
 
-    @Override
+    @SuppressWarnings("rawtypes")
+	@Override
     public InternalMessage getInFlightMessage(String clientId, int packetId) {
         InternalMessage m = mapToInternal(hash().hgetall(RedisKey.inFlightMessage(clientId, packetId)));
         if (m == null) removeInFlightMessage(clientId, packetId);
         return m;
     }
 
-    @Override
+    @SuppressWarnings("rawtypes")
+	@Override
     public void addInFlightMessage(String clientId, int packetId, InternalMessage msg, boolean dup) {
         Map<String, String> map = internalToMap(msg);
         map.put("dup", BooleanUtils.toString(dup, "1", "0"));
@@ -224,7 +214,8 @@ public class RedisSyncSingleStorage implements RedisSyncStorage {
         hash().hmset(RedisKey.inFlightMessage(clientId, packetId), map);
     }
 
-    @Override
+    @SuppressWarnings("rawtypes")
+	@Override
     public void addInFlightMessage(String clientId, int packetId, InternalMessage msg, boolean dup, long ttl) {
         addInFlightMessage(clientId, packetId, msg, dup);
         key().expire(RedisKey.inFlightMessage(clientId, packetId), ttl);
@@ -236,7 +227,8 @@ public class RedisSyncSingleStorage implements RedisSyncStorage {
         key().del(RedisKey.inFlightMessage(clientId, packetId));
     }
 
-    @Override
+    @SuppressWarnings("rawtypes")
+	@Override
     public List<InternalMessage> getAllInFlightMessages(String clientId) {
         List<InternalMessage> r = new ArrayList<>();
         List<String> ids = list().lrange(RedisKey.inFlightList(clientId), 0, -1);
@@ -666,4 +658,43 @@ public class RedisSyncSingleStorage implements RedisSyncStorage {
 
         return r;
     }
+
+    private Lock getLock(String name) {
+        return this.redisson.getLock(name);
+    }
+
+     /**
+      * Distributed lock instance by name.
+      *
+      * @param name of the distributed lock
+      */
+     @Override
+	public void lock(String name) {
+		getLock(name).lock();
+	}
+
+     /**
+      * Distributed lock instance by name.
+      *
+      * @param name of the distributed lock
+      * @param timeOut for the lock
+      */
+	@Override
+	public void lock(String name, long timeoutInMs) throws RuntimeException {
+		try {
+			getLock(name).tryLock(timeoutInMs, TimeUnit.MILLISECONDS);
+		} catch (InterruptedException ie) {
+			throw new RuntimeException(ie.getMessage());
+		}
+	}
+
+    /**
+     * Unlock Distributed Lock Instance by Name.
+     *
+     * @param name of the distributed lock
+     */
+	@Override
+	public void unlock(String name) {
+		getLock(name).unlock();
+	}
 }

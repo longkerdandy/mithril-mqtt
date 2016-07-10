@@ -19,7 +19,6 @@ import java.util.List;
 /**
  * Synchronized Storage for Master Slave Redis setup
  */
-@SuppressWarnings("unused")
 public class RedisSyncMasterSlaveStorage extends RedisSyncSingleStorage {
 
     // A scalable thread-safe Redis client. Multiple threads may share one connection if they avoid
@@ -28,42 +27,34 @@ public class RedisSyncMasterSlaveStorage extends RedisSyncSingleStorage {
     // A thread-safe connection to a redis server. Multiple threads may share one StatefulRedisConnection
     private StatefulRedisMasterSlaveConnection<String, String> lettuceMasterSlaveConn;
 
-    @SuppressWarnings("unused")
     protected RedisHashCommands<String, String> hash() {
         return this.lettuceMasterSlaveConn.sync();
     }
 
-    @SuppressWarnings("unused")
     protected RedisKeyCommands<String, String> key() {
         return this.lettuceMasterSlaveConn.sync();
     }
 
-    @SuppressWarnings("unused")
     protected RedisStringCommands<String, String> string() {
         return this.lettuceMasterSlaveConn.sync();
     }
 
-    @SuppressWarnings("unused")
     protected RedisListCommands<String, String> list() {
         return this.lettuceMasterSlaveConn.sync();
     }
 
-    @SuppressWarnings("unused")
     protected RedisSetCommands<String, String> set() {
         return this.lettuceMasterSlaveConn.sync();
     }
 
-    @SuppressWarnings("unused")
     protected RedisSortedSetCommands<String, String> sortedSet() {
         return this.lettuceMasterSlaveConn.sync();
     }
 
-    @SuppressWarnings("unused")
     protected RedisScriptingCommands<String, String> script() {
         return this.lettuceMasterSlaveConn.sync();
     }
 
-    @SuppressWarnings("unused")
     protected RedisServerCommands<String, String> server() {
         return this.lettuceMasterSlaveConn.sync();
     }

@@ -8,10 +8,11 @@ import javax.ws.rs.core.Response;
 /**
  * Validate Exception
  */
-@SuppressWarnings("unused")
 public class ValidateException extends WebApplicationException {
 
-    /**
+	private static final long serialVersionUID = -2897180088846699127L;
+
+	/**
      * Create a HTTP 422 (UnProcessable Entity) exception.
      */
     public ValidateException() {
@@ -23,7 +24,8 @@ public class ValidateException extends WebApplicationException {
      *
      * @param entity the error response entity
      */
-    public ValidateException(ErrorEntity entity) {
+    @SuppressWarnings("rawtypes")
+	public ValidateException(ErrorEntity entity) {
         super(Response.status(422).entity(entity).type("application/json").build());
     }
 }

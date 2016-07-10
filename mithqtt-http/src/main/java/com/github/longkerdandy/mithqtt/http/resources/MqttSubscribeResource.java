@@ -11,10 +11,11 @@ import com.github.longkerdandy.mithqtt.api.comm.HttpCommunicator;
 import com.github.longkerdandy.mithqtt.api.internal.InternalMessage;
 import com.github.longkerdandy.mithqtt.api.metrics.MetricsService;
 import com.github.longkerdandy.mithqtt.http.entity.Subscription;
+import com.github.longkerdandy.mithqtt.http.entity.UserPrincipal;
 import com.github.longkerdandy.mithqtt.http.util.Validator;
 import com.github.longkerdandy.mithqtt.storage.redis.sync.RedisSyncStorage;
 import com.github.longkerdandy.mithqtt.util.Topics;
-import com.sun.security.auth.UserPrincipal;
+
 import io.dropwizard.auth.Auth;
 import io.netty.handler.codec.mqtt.*;
 import org.apache.commons.lang3.ArrayUtils;
@@ -49,11 +50,13 @@ public class MqttSubscribeResource extends AbstractResource {
      * Granted QoS Levels will send back to client.
      * Retain Messages matched the subscriptions will NOT send back to client.
      */
-    public ResultEntity<List<MqttGrantedQoS>> subscribe(@PathParam("clientId") String clientId, @Auth UserPrincipal user, @QueryParam("protocol") @DefaultValue("4") byte protocol,
-                                                        @QueryParam("packetId") @DefaultValue("0") int packetId,
-                                                        List<Subscription> subscriptions) {
+    @SuppressWarnings("rawtypes")
+	public ResultEntity<List<MqttQoS>> subscribe(@PathParam("clientId") String clientId, @Auth UserPrincipal user,
+			@QueryParam("protocolname") @DefaultValue("MQTT") String protocolname,
+			@QueryParam("protocol") @DefaultValue("4") byte protocol,
+			@QueryParam("packetId") @DefaultValue("0") int packetId, List<Subscription> subscriptions) {
         String userName = user.getName();
-        MqttVersion version = MqttVersion.fromProtocolLevel(protocol);
+        MqttVersion version = MqttVersion.fromProtocolNameAndLevel(protocolname, protocol);
         List<MqttTopicSubscription> requestSubscriptions = new ArrayList<>();
         List<TopicSubscription> grantedSubscriptions = new ArrayList<>();
 
@@ -82,18 +85,18 @@ public class MqttSubscribeResource extends AbstractResource {
         logger.debug("Message received: Received SUBSCRIBE message from client {} user {}", clientId, userName);
 
         // Authorize client subscribe using provided Authenticator
-        List<MqttGrantedQoS> grantedQosLevels = this.authenticator.authSubscribe(clientId, userName, requestSubscriptions);
+        List<MqttQoS> grantedQosLevels = this.authenticator.authSubscribe(clientId, userName, requestSubscriptions);
         logger.trace("Authorization granted: Subscribe to topic {} granted as {} for client {}", ArrayUtils.toString(requestSubscriptions), ArrayUtils.toString(grantedQosLevels), clientId);
 
         for (int i = 0; i < requestSubscriptions.size(); i++) {
 
-            MqttGrantedQoS grantedQoS = grantedQosLevels.get(i);
-            String topic = requestSubscriptions.get(i).topic();
+            MqttQoS grantedQoS = grantedQosLevels.get(i);
+            String topic = requestSubscriptions.get(i).topicName();
             List<String> topicLevels = Topics.sanitize(topic);
             grantedSubscriptions.add(new TopicSubscription(topic, grantedQoS));
 
             // Granted only
-            if (grantedQoS != MqttGrantedQoS.FAILURE) {
+            if (grantedQoS != MqttQoS.FAILURE) {
 
                 // If a Server receives a SUBSCRIBE Packet containing a Topic Filter that is identical to an existing
                 // Subscription’s Topic Filter then it MUST completely replace that existing Subscription with a new
@@ -112,7 +115,8 @@ public class MqttSubscribeResource extends AbstractResource {
         return new ResultEntity<>(grantedQosLevels);
     }
 
-    @PermitAll
+    @SuppressWarnings("rawtypes")
+	@PermitAll
     @GET
     /**
      * Handle MQTT Subscribe Request in RESTful style

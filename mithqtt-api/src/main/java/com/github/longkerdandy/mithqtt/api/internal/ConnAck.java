@@ -7,10 +7,13 @@ import java.io.Serializable;
 /**
  * Represent MQTT CONNACK Message's VariableHeader
  */
-@SuppressWarnings("unused")
 public class ConnAck implements Serializable {
 
-    private MqttConnectReturnCode returnCode;
+    /**
+	 * 
+	 */
+	private static final long serialVersionUID = -4920272123036812128L;
+	private MqttConnectReturnCode returnCode;
     private boolean sessionPresent;
 
     protected ConnAck() {

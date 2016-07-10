@@ -8,7 +8,6 @@ import java.util.List;
 /**
  * MQTT Topic Utils
  */
-@SuppressWarnings("unused")
 public class Topics {
 
     // Present an empty level in the wildcard topic filter

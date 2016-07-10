@@ -29,7 +29,7 @@ public class MessageMetricsHandler extends ChannelDuplexHandler {
         if (msg instanceof MqttMessage) {
             MqttMessage mqtt = (MqttMessage) msg;
             if (StringUtils.isBlank(this.clientId) && mqtt.fixedHeader().messageType() == MqttMessageType.CONNECT) {
-                this.clientId = ((MqttConnectPayload) mqtt.payload()).clientId();
+                this.clientId = ((MqttConnectPayload) mqtt.payload()).clientIdentifier();
             }
             if (StringUtils.isNotBlank(this.clientId)) {
                 this.metrics.measurement(this.clientId, this.brokerId, MessageDirection.IN, mqtt.fixedHeader().messageType());

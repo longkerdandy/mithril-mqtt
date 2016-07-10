@@ -5,7 +5,6 @@ import com.github.longkerdandy.mithqtt.api.internal.*;
 /**
  * Application's Listener for Processor Communicator
  */
-@SuppressWarnings("unused")
 public interface ApplicationListener {
 
     /**

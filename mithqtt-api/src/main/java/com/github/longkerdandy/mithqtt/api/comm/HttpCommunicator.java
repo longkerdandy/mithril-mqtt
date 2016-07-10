@@ -28,7 +28,8 @@ public interface HttpCommunicator {
      * @param brokerId Broker Id
      * @param message  Internal Message
      */
-    void sendToBroker(String brokerId, InternalMessage message);
+    @SuppressWarnings("rawtypes")
+	void sendToBroker(String brokerId, InternalMessage message);
 
     /**
      * Send internal message to outside
@@ -36,5 +37,6 @@ public interface HttpCommunicator {
      *
      * @param message Internal Message
      */
-    void sendToApplication(InternalMessage message);
+    @SuppressWarnings("rawtypes")
+	void sendToApplication(InternalMessage message);
 }

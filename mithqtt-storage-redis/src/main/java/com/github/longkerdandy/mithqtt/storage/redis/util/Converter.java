@@ -23,7 +23,8 @@ public class Converter {
      * @param map Map
      * @return InternalMessage
      */
-    public static InternalMessage mapToInternal(Map<String, String> map) {
+    @SuppressWarnings("rawtypes")
+	public static InternalMessage mapToInternal(Map<String, String> map) {
         if (map == null || map.isEmpty()) return null;
 
         int type = Integer.parseInt(map.get("type"));
@@ -69,7 +70,8 @@ public class Converter {
      * @param msg InternalMessage
      * @return Map
      */
-    public static Map<String, String> internalToMap(InternalMessage msg) {
+    @SuppressWarnings("rawtypes")
+	public static Map<String, String> internalToMap(InternalMessage msg) {
         Map<String, String> map = new HashMap<>();
         if (msg == null) return map;
 

@@ -6,7 +6,6 @@ import com.github.longkerdandy.mithqtt.api.internal.Publish;
 import com.github.longkerdandy.mithqtt.api.internal.PacketId;
 import com.github.longkerdandy.mithqtt.storage.redis.RedisKey;
 import com.github.longkerdandy.mithqtt.util.Topics;
-import com.lambdaworks.redis.ValueScanCursor;
 import io.netty.handler.codec.mqtt.MqttMessageType;
 import io.netty.handler.codec.mqtt.MqttQoS;
 import io.netty.handler.codec.mqtt.MqttVersion;
@@ -19,6 +18,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static com.github.longkerdandy.mithqtt.storage.redis.util.JSONs.ObjectMapper;
@@ -70,13 +70,13 @@ public class RedisSyncSingleStorageTest {
         assert redis.getConnectedNode("client4").equals("node2");
         assert redis.getConnectedNode("client5").equals("node2");
 
-        ValueScanCursor<String> vcs1 = redis.getConnectedClients("node1", "0", 100);
-        assert vcs1.getValues().contains("client1");
-        assert vcs1.getValues().contains("client2");
-        assert vcs1.getValues().contains("client3");
-        ValueScanCursor<String> vcs2 = redis.getConnectedClients("node2", "0", 100);
-        assert vcs2.getValues().contains("client4");
-        assert vcs2.getValues().contains("client5");
+        List<String> vcs1 = redis.getConnectedClients("node1", "0", 100);
+        assert vcs1.contains("client1");
+        assert vcs1.contains("client2");
+        assert vcs1.contains("client3");
+        List<String> vcs2 = redis.getConnectedClients("node2", "0", 100);
+        assert vcs2.contains("client4");
+        assert vcs2.contains("client5");
 
         assert redis.removeConnectedNode("client3", "node1");
         assert !redis.removeConnectedNode("client4", "node1");   // not exist
@@ -85,9 +85,9 @@ public class RedisSyncSingleStorageTest {
         assert redis.getConnectedNode("client4").equals("node2");
 
         vcs1 = redis.getConnectedClients("node1", "0", 100);
-        assert !vcs1.getValues().contains("client3");
+        assert !vcs1.contains("client3");
         vcs2 = redis.getConnectedClients("node2", "0", 100);
-        assert vcs2.getValues().contains("client4");
+        assert vcs2.contains("client4");
     }
 
     @Test

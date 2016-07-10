@@ -1,8 +1,9 @@
 package com.github.longkerdandy.mithqtt.http.oauth;
 
 import com.github.longkerdandy.mithqtt.api.auth.Authenticator;
+import com.github.longkerdandy.mithqtt.http.entity.UserPrincipal;
 import com.google.common.base.Optional;
-import com.sun.security.auth.UserPrincipal;
+
 import io.dropwizard.auth.AuthenticationException;
 import org.apache.commons.lang3.StringUtils;
 
@@ -33,7 +34,10 @@ public class OAuthAuthenticator implements io.dropwizard.auth.Authenticator<Stri
             return Optional.absent();
         }
         // validate token
-        String u = this.authenticator.oauth(credentials);
+        String u = "";
+        if (this.authenticator instanceof com.github.longkerdandy.mithqtt.api.auth.OAuthAuthenticator) {
+            u = ((com.github.longkerdandy.mithqtt.api.auth.OAuthAuthenticator)this.authenticator).oauth(credentials);
+        }
         return StringUtils.isBlank(u) ? Optional.absent() : Optional.of(new UserPrincipal(u));
     }
 }

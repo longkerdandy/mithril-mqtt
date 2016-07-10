@@ -5,10 +5,13 @@ import java.io.Serializable;
 /**
  * Represent MQTT Message's VariableHeader which only contains Packet Id
  */
-@SuppressWarnings("unused")
 public class PacketId implements Serializable {
 
-    private int packetId;
+    /**
+	 * 
+	 */
+	private static final long serialVersionUID = -5933061800555550532L;
+	private int packetId;
 
     protected PacketId() {
     }

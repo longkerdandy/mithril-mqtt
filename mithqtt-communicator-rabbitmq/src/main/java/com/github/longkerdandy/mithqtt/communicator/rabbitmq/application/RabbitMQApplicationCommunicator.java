@@ -17,7 +17,6 @@ import java.util.concurrent.TimeoutException;
 /**
  * Application Communicator implementation for RabbitMQ
  */
-@SuppressWarnings("unused")
 public class RabbitMQApplicationCommunicator implements ApplicationCommunicator {
 
     private static final Logger logger = LoggerFactory.getLogger(RabbitMQApplicationCommunicator.class);

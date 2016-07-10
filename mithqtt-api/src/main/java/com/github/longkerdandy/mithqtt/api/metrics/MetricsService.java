@@ -6,7 +6,6 @@ import org.apache.commons.configuration.AbstractConfiguration;
 /**
  * Metrics Service
  */
-@SuppressWarnings("unused")
 public interface MetricsService {
 
     /**

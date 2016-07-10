@@ -2,7 +2,28 @@ package com.github.longkerdandy.mithqtt.api.internal;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import io.netty.handler.codec.mqtt.*;
+import io.netty.handler.codec.mqtt.MqttConnAckMessage;
+import io.netty.handler.codec.mqtt.MqttConnAckVariableHeader;
+import io.netty.handler.codec.mqtt.MqttConnectMessage;
+import io.netty.handler.codec.mqtt.MqttConnectPayload;
+import io.netty.handler.codec.mqtt.MqttConnectVariableHeader;
+import io.netty.handler.codec.mqtt.MqttFixedHeader;
+import io.netty.handler.codec.mqtt.MqttMessage;
+import io.netty.handler.codec.mqtt.MqttMessageFactory;
+import io.netty.handler.codec.mqtt.MqttMessageIdVariableHeader;
+import io.netty.handler.codec.mqtt.MqttMessageType;
+import io.netty.handler.codec.mqtt.MqttPublishMessage;
+import io.netty.handler.codec.mqtt.MqttPublishVariableHeader;
+import io.netty.handler.codec.mqtt.MqttQoS;
+import io.netty.handler.codec.mqtt.MqttSubAckMessage;
+import io.netty.handler.codec.mqtt.MqttSubAckPayload;
+import io.netty.handler.codec.mqtt.MqttSubscribeMessage;
+import io.netty.handler.codec.mqtt.MqttSubscribePayload;
+import io.netty.handler.codec.mqtt.MqttTopicSubscription;
+import io.netty.handler.codec.mqtt.MqttUnsubscribeMessage;
+import io.netty.handler.codec.mqtt.MqttUnsubscribePayload;
+import io.netty.handler.codec.mqtt.MqttVersion;
+
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.Serializable;
@@ -12,10 +33,11 @@ import java.util.List;
 /**
  * Represent MQTT Message passed in Communicator
  */
-@SuppressWarnings("unused")
 public class InternalMessage<T> implements Serializable {
 
-    // fixed header
+	private static final long serialVersionUID = -4032909532911735019L;
+	
+	// fixed header
     private MqttMessageType messageType;
     private boolean dup;
     private MqttQoS qos;
@@ -58,7 +80,7 @@ public class InternalMessage<T> implements Serializable {
     protected static <T> InternalMessage<T> fromMqttMessage(MqttVersion version, String clientId, String userName,
                                                             String brokerId,
                                                             MqttFixedHeader fixedHeader) {
-        return new InternalMessage<>(fixedHeader.messageType(), fixedHeader.dup(), fixedHeader.qos(), fixedHeader.retain(),
+        return new InternalMessage<T>(fixedHeader.messageType(), fixedHeader.isDup(), fixedHeader.qosLevel(), fixedHeader.isRetain(),
                 version, clientId, userName, brokerId);
     }
 
@@ -66,9 +88,9 @@ public class InternalMessage<T> implements Serializable {
                                                            String brokerId,
                                                            MqttConnectMessage mqtt) {
         InternalMessage<Connect> msg = fromMqttMessage(version, clientId, userName, brokerId, mqtt.fixedHeader());
-        msg.payload = mqtt.variableHeader().willFlag() ?
-                new Connect(mqtt.variableHeader().cleanSession(), mqtt.variableHeader().willRetain(), mqtt.variableHeader().willQos(), mqtt.payload().willTopic(), mqtt.payload().willMessage().getBytes()) :
-                new Connect(mqtt.variableHeader().cleanSession(), false, MqttQoS.AT_MOST_ONCE, null, null);
+        msg.payload = mqtt.variableHeader().isWillFlag() ?
+                new Connect(mqtt.variableHeader().isCleanSession(), mqtt.variableHeader().isWillRetain(), MqttQoS.valueOf(mqtt.variableHeader().willQos()), mqtt.payload().willTopic(), mqtt.payload().willMessage().getBytes()) :
+                new Connect(mqtt.variableHeader().isCleanSession(), false, MqttQoS.AT_MOST_ONCE, null, null);
         return msg;
     }
 
@@ -76,24 +98,24 @@ public class InternalMessage<T> implements Serializable {
                                                            String brokerId,
                                                            MqttConnAckMessage mqtt) {
         InternalMessage<ConnAck> msg = fromMqttMessage(version, clientId, userName, brokerId, mqtt.fixedHeader());
-        msg.payload = new ConnAck(mqtt.variableHeader().returnCode(), mqtt.variableHeader().sessionPresent());
+        msg.payload = new ConnAck(mqtt.variableHeader().connectReturnCode(), mqtt.variableHeader().isSessionPresent());
         return msg;
     }
 
     public static InternalMessage<Subscribe> fromMqttMessage(MqttVersion version, String clientId, String userName,
                                                              String brokerId,
-                                                             MqttSubscribeMessage mqtt, List<MqttGrantedQoS> returnCodes) {
+                                                             MqttSubscribeMessage mqtt, List<MqttQoS> returnCodes) {
         InternalMessage<Subscribe> msg = fromMqttMessage(version, clientId, userName, brokerId, mqtt.fixedHeader());
         // forge topic subscriptions
-        if (mqtt.payload().subscriptions().size() != returnCodes.size()) {
+        if (mqtt.payload().topicSubscriptions().size() != returnCodes.size()) {
             throw new IllegalArgumentException("MQTT SUBSCRIBE message's subscriptions count not equal to granted QoS count");
         }
         List<TopicSubscription> topicSubscriptions = new ArrayList<>();
-        for (int i = 0; i < mqtt.payload().subscriptions().size(); i++) {
-            TopicSubscription subscription = new TopicSubscription(mqtt.payload().subscriptions().get(i).topic(), returnCodes.get(i));
+        for (int i = 0; i < mqtt.payload().topicSubscriptions().size(); i++) {
+            TopicSubscription subscription = new TopicSubscription(mqtt.payload().topicSubscriptions().get(i).topicName(), returnCodes.get(i));
             topicSubscriptions.add(subscription);
         }
-        msg.payload = new Subscribe(mqtt.variableHeader().packetId(), topicSubscriptions);
+        msg.payload = new Subscribe(mqtt.variableHeader().messageId(), topicSubscriptions);
         return msg;
     }
 
@@ -101,7 +123,11 @@ public class InternalMessage<T> implements Serializable {
                                                           String brokerId,
                                                           MqttSubAckMessage mqtt) {
         InternalMessage<SubAck> msg = fromMqttMessage(version, clientId, userName, brokerId, mqtt.fixedHeader());
-        msg.payload = new SubAck(mqtt.variableHeader().packetId(), mqtt.payload().grantedQoSLevels());
+        final List<MqttQoS> qosLevelsGranted = new ArrayList<MqttQoS>();
+        for(int qos: mqtt.payload().grantedQoSLevels()) {
+        	qosLevelsGranted.add(MqttQoS.valueOf(qos));
+        }
+        msg.payload = new SubAck(mqtt.variableHeader().messageId(), qosLevelsGranted);
         return msg;
     }
 
@@ -109,7 +135,7 @@ public class InternalMessage<T> implements Serializable {
                                                                String brokerId,
                                                                MqttUnsubscribeMessage mqtt) {
         InternalMessage<Unsubscribe> msg = fromMqttMessage(version, clientId, userName, brokerId, mqtt.fixedHeader());
-        msg.payload = new Unsubscribe(mqtt.variableHeader().packetId(), mqtt.payload().topics());
+        msg.payload = new Unsubscribe(mqtt.variableHeader().messageId(), mqtt.payload().topics());
         return msg;
     }
 
@@ -121,7 +147,7 @@ public class InternalMessage<T> implements Serializable {
         ByteBuf buf = mqtt.payload().duplicate();
         byte[] bytes = new byte[buf.readableBytes()];
         buf.readBytes(bytes);
-        msg.payload = new Publish(mqtt.variableHeader().topicName(), mqtt.variableHeader().packetId(), bytes);
+        msg.payload = new Publish(mqtt.variableHeader().topicName(), mqtt.variableHeader().messageId(), bytes);
         return msg;
     }
 
@@ -132,12 +158,13 @@ public class InternalMessage<T> implements Serializable {
                 version, clientId, userName, brokerId, new Disconnect(cleanSession, cleanExit));
     }
 
-    public static InternalMessage fromMqttMessage(MqttVersion version, String clientId, String userName,
+    @SuppressWarnings("rawtypes")
+	public static InternalMessage fromMqttMessage(MqttVersion version, String clientId, String userName,
                                                   String brokerId,
                                                   MqttMessage mqtt) {
-        if (mqtt.variableHeader() != null && mqtt.variableHeader() instanceof MqttPacketIdVariableHeader) {
+        if (mqtt.variableHeader() != null && mqtt.variableHeader() instanceof MqttMessageIdVariableHeader) {
             InternalMessage<PacketId> msg = fromMqttMessage(version, clientId, userName, brokerId, mqtt.fixedHeader());
-            msg.payload = new PacketId(((MqttPacketIdVariableHeader) mqtt.variableHeader()).packetId());
+            msg.payload = new PacketId(((MqttMessageIdVariableHeader) mqtt.variableHeader()).messageId());
             return msg;
         } else {
             return fromMqttMessage(version, clientId, userName, brokerId, mqtt.fixedHeader());
@@ -224,7 +251,7 @@ public class InternalMessage<T> implements Serializable {
                 boolean userNameFlag = StringUtils.isNotBlank(userName);
                 boolean willFlag = connect.getWillMessage() != null && connect.getWillMessage().length > 0;
                 return MqttMessageFactory.newMessage(fixedHeader,
-                        new MqttConnectVariableHeader(version.protocolName(), version.protocolLevel(), userNameFlag, false, connect.isWillRetain(), connect.getWillQos(), willFlag, connect.isCleanSession(), 0),
+                        new MqttConnectVariableHeader(version.protocolName(), version.protocolLevel(), userNameFlag, false, connect.isWillRetain(), connect.getWillQos().value(), willFlag, connect.isCleanSession(), 0),
                         new MqttConnectPayload(clientId, connect.getWillTopic(), new String(connect.getWillMessage()), userName, null));
             case CONNACK:
                 ConnAck connAck = (ConnAck) payload;
@@ -238,24 +265,28 @@ public class InternalMessage<T> implements Serializable {
                         subscriptions.add(new MqttTopicSubscription(s.getTopic(), MqttQoS.valueOf(s.getGrantedQos().value())))
                 );
                 return MqttMessageFactory.newMessage(fixedHeader,
-                        MqttPacketIdVariableHeader.from(subscribe.getPacketId()),
+                        MqttMessageIdVariableHeader.from(subscribe.getPacketId()),
                         new MqttSubscribePayload(subscriptions));
             case SUBACK:
                 SubAck subAck = (SubAck) payload;
+                List<Integer> grantedQosLevels = new ArrayList<Integer>();
+                for(MqttQoS qos: subAck.getGrantedQoSLevels()) {
+                	grantedQosLevels.add(qos.value());
+                }
                 return MqttMessageFactory.newMessage(fixedHeader,
-                        MqttPacketIdVariableHeader.from(subAck.getPacketId()),
-                        new MqttSubAckPayload(subAck.getGrantedQoSLevels()));
+                        MqttMessageIdVariableHeader.from(subAck.getPacketId()),
+                        new MqttSubAckPayload(grantedQosLevels));
             case UNSUBSCRIBE:
                 Unsubscribe unsubscribe = (Unsubscribe) payload;
                 return MqttMessageFactory.newMessage(fixedHeader,
-                        MqttPacketIdVariableHeader.from(unsubscribe.getPacketId()),
+                        MqttMessageIdVariableHeader.from(unsubscribe.getPacketId()),
                         new MqttUnsubscribePayload(unsubscribe.getTopics()));
             case PUBLISH:
                 Publish publish = (Publish) payload;
                 return MqttMessageFactory.newMessage(fixedHeader,
                         (qos == MqttQoS.AT_MOST_ONCE) ?
-                                MqttPublishVariableHeader.from(publish.getTopicName()) :
-                                MqttPublishVariableHeader.from(publish.getTopicName(), publish.getPacketId()),
+                        		new MqttPublishVariableHeader(publish.getTopicName(), 0): 
+                                new MqttPublishVariableHeader(publish.getTopicName(), publish.getPacketId()),
                         (publish.getPayload() != null && publish.getPayload().length > 0) ?
                                 Unpooled.wrappedBuffer(publish.getPayload()) :
                                 Unpooled.EMPTY_BUFFER);
@@ -266,7 +297,7 @@ public class InternalMessage<T> implements Serializable {
             case PUBCOMP:
                 PacketId packetId = (PacketId) payload;
                 return MqttMessageFactory.newMessage(fixedHeader,
-                        MqttPacketIdVariableHeader.from(packetId.getPacketId()),
+                        MqttMessageIdVariableHeader.from(packetId.getPacketId()),
                         null);
             case PINGREQ:
             case PINGRESP:

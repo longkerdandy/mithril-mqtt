@@ -33,7 +33,7 @@ public class RabbitMQApplicationConsumer extends DefaultConsumer {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException {
         // decode internal message
         InternalMessage msg = JSONs.decodeInternalMessage(body);
